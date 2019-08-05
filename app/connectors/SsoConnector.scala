@@ -65,13 +65,6 @@ class SsoConnector @Inject() (override val cache: CacheApi) extends ApiJsonForma
   def getTokenDetails(tokenUrl: URL)(implicit hc: HeaderCarrier): Future[ApiToken] = {
     http.GET[ApiToken](tokenUrl.toString)
   }
-
-  def getSsoInSessionInfo(id: String)(implicit hc: HeaderCarrier) =
-    http.GET[SsoInSessionInfo](s"$serviceUrl/sso/ssoin/sessionInfo/$id")
-      .map(Some(_))
-      .recover {
-        case _: NotFoundException => None
-      }
 }
 
 case class SsoInSessionInfo(bearerToken: String, sessionId: String, userId: String)
