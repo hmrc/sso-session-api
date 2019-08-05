@@ -1,6 +1,0 @@
-# microservice specific routes
-
-#browser sso
-GET        /session                      websession.redeem.RedeemTokenController.redeem(token: String)
-
-

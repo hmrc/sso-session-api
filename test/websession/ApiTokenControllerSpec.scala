@@ -107,7 +107,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with MockitoSuga
       status(result) shouldBe 200
 
       val sessionLink = jsonBodyOf(result.futureValue) \ "_links" \ "session"
-      sessionLink.as[String] shouldBe (ssoFeHost + websession.redeem.routes.RedeemTokenController.redeem(encodedCorrectToken).url)
+      sessionLink.as[String] shouldBe (ssoFeHost + s"/sso/session?token=$encodedCorrectToken")
 
       val auditEventCaptor: ArgumentCaptor[DataEvent] = ArgumentCaptor.forClass(classOf[DataEvent])
       verify(auditConnectorMock).sendEvent(auditEventCaptor.capture())(any[HeaderCarrier], any[ExecutionContext])

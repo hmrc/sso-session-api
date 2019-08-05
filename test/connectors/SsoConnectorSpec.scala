@@ -143,32 +143,5 @@ class SsoConnectorSpec extends UnitSpec with ScalaFutures with MockitoSugar with
       val fApiToken = ssoConnector.getTokenDetails(new URL(mockUrlString))
       whenReady(fApiToken) { token => token shouldEqual Mock.token }
     }
-
-    "on calling getSsoInSessionInfo, makes GET request for SSO session in information using the given id, returns Future[Some[SsoInSessionInfo]]" in new Setup {
-      val mockId = "1234"
-      val mockUrlString = Mock.serviceBaseURL + "/sso/ssoin/sessionInfo/" + mockId
-      when(Mock.http.GET[SsoInSessionInfo](matches(mockUrlString))(any(), any(), any())).thenReturn(Future.successful(
-        Mock.ssnInfo
-      ))
-      val foInfo = ssoConnector.getSsoInSessionInfo(mockId)
-      whenReady(foInfo) {
-        case Some(info) => { info shouldEqual Mock.ssnInfo }
-        case _          => { fail("expected Some SsoInSessionInfo to be returned") }
-      }
-    }
-
-    "on calling getSsoInSessionInfo, makes GET request for SSO session in information using the given id, returns None on NotFoundException" in new Setup {
-      val mockId = "1234"
-      val mockUrlString = Mock.serviceBaseURL + "/sso/ssoin/sessionInfo/" + mockId
-      when(Mock.http.GET[SsoInSessionInfo](matches(mockUrlString))(any(), any(), any())).thenReturn(Future.failed(new NotFoundException("")))
-      val foInfo = ssoConnector.getSsoInSessionInfo(mockId)
-      whenReady(foInfo) {
-        case Some(info) => { fail("expected None to be returned due to NotFoundException") }
-        case None       => {}
-        case _          => { fail("expected None to be returned due to NotFoundException") }
-      }
-    }
-
   }
-
 }

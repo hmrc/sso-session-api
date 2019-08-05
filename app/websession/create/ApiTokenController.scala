@@ -52,7 +52,7 @@ class ApiTokenController @Inject() (val ssoConnector:         SsoConnector,
 
       def redeemUrl(tokenUrl: URL): JsValueWrapper = {
         val encrypted = new String(ssoCrypto.encrypt(PlainText(tokenUrl.toString)).toBase64)
-        s"${frontendAppConfig.ssoFeHost}${websession.redeem.routes.RedeemTokenController.redeem(encrypted).url}"
+        s"${frontendAppConfig.ssoFeHost}/sso/session?token=$encrypted"
       }
 
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
