@@ -1,0 +1,7 @@
+# microservice specific routes
+
+#browser sso
+GET        /session                      websession.redeem.RedeemTokenController.redeem(token: String)
+GET        /:guid/transparent.png        websession.extend.ExtendSessionController.extend(guid: String)
+
+

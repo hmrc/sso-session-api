@@ -1,0 +1,4 @@
+# Sandbox API routes
+
+#api sso
+GET /web-session       @api.SandboxController.create(continueUrl: uk.gov.hmrc.play.binders.ContinueUrl)

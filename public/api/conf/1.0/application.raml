@@ -1,0 +1,46 @@
+#%RAML 1.0
+---
+
+title: Web Session
+version: 1.0
+protocols: [ HTTPS ]
+baseUri: https://api.service.hmrc.gov.uk/
+
+documentation:
+ - title: Overview
+   content: !include docs/overview.md
+ - title: Versioning
+   content: !include https://developer.service.hmrc.gov.uk/api-documentation/assets/common/docs/versioning.md
+ - title: Errors
+   content: !include https://developer.service.hmrc.gov.uk/api-documentation/assets/common/docs/errors.md
+
+mediaType: [ application/json, application/hal+json ]
+
+uses:
+  sec: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/securitySchemes.raml
+  headers: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/headers.raml
+  annotations: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/annotations.raml
+  types: https://developer.service.hmrc.gov.uk/api-documentation/assets/common/modules/types.raml
+
+/web-session:
+  /sso-api:
+    /web-session:
+      get:
+        displayName: Get web session
+        description: This endpoint gets a link to a web-session for the current API user.
+        is: [headers.acceptHeader]
+        (annotations.scope): "read:web-session"
+        securedBy: [ sec.oauth_2_0: { scopes: [ "read:web-session" ] } ]
+        queryParameters:
+          continueUrl:
+            description: The url you want to access in the browser session. it must not contain a host.
+            type: string
+            example: "/tax-credits/doo/dar"
+            required: true
+        responses:
+          200:
+            body:
+              application/json:
+                examples:
+                  example-1:
+                    value: !include examples/get-web-session.json

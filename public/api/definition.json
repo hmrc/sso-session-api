@@ -1,0 +1,22 @@
+{
+  "scopes": [
+    {
+      "key": "read:web-session",
+      "name": "access a web session",
+      "description": "Access a web session"
+    }
+  ],
+  "api": {
+    "name": "Web Session",
+    "description": "Provides web/browser access to the current API user.",
+    "context": "web-session",
+    "requiresTrust": true,
+    "versions": [
+      {
+        "version": "1.0",
+        "status": "STABLE",
+        "endpointsEnabled": true
+      }
+    ]
+  }
+}
