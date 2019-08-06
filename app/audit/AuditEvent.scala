@@ -23,7 +23,7 @@ import uk.gov.hmrc.play.audit.model.DataEvent
 
 object AuditEvent {
 
-  val auditSource = "sso-frontend"
+  val auditSource = "sso-session-api"
 
   private def getTags(hc: HeaderCarrier, path: String, transactionName: String): Map[String, String] = Map(
     "clientIP" -> hc.trueClientIp.getOrElse("-"),

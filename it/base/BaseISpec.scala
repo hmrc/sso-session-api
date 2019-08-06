@@ -15,8 +15,6 @@ import uk.gov.hmrc.play.http.ws.WSRequest
 trait BaseISpec extends SmIntegrationSpecBase with WSRequest with SessionCookieEncryptionSupport {
 
   override protected def extraConfig = Map(
-    "Test.sso-fe.host" -> s"http://$localhost:$port",
-    "Test.sso-fe.port" -> port,
     "Test.microservice.services.service-locator.enabled" -> false
   )
 

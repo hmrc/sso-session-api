@@ -32,6 +32,7 @@ trait MicroService {
 
   lazy val externalServices = List(
     ExternalService(name = "SSO"),
+    ExternalService(name = "SSO_FRONTEND"),
     ExternalService(name = "OPENID_CONNECT_IDTOKEN"),
     ExternalService(name = "AUTH"),
     ExternalService(name = "AUTH_LOGIN_API"),
