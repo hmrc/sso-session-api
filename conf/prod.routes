@@ -1,0 +1,12 @@
+# microservice specific routes
+->         /sandbox/sso-api      sandbox.Routes
+->         /sso-api/             live.Routes
+
+->         /                     definition.Routes
+
+#admin pages
+->         /                     health.Routes
+->         /template             template.Routes
+
+#metrics
+GET        /admin/metrics        @com.kenshoo.play.metrics.MetricsController.metrics
