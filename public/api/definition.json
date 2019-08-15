@@ -9,7 +9,7 @@
   "api": {
     "name": "Web Session",
     "description": "Provides web/browser access to the current API user.",
-    "context": "web-session",
+    "context": "web-session/sso-api",
     "requiresTrust": true,
     "versions": [
       {
