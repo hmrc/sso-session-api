@@ -1,6 +1,6 @@
 # microservice specific routes
 ->         /sandbox/sso-api      sandbox.Routes
-->         /sso-api/             live.Routes
+->         /                     live.Routes
 
 ->         /                     definition.Routes
 
