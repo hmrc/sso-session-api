@@ -47,7 +47,7 @@ trait BaseISpec extends SmIntegrationSpecBase with WSRequest with SessionCookieE
 
 
   def createApiToken(continueUrl: String, authToken: String, sessionId: String = UUID.randomUUID().toString): WSResponse = {
-    await(resourceRequest("/sso-api/web-session")
+    await(resourceRequest("/web-session")
       .withQueryString(("continueUrl", continueUrl))
       .withFollowRedirects(false)
       .withHeaders(HeaderNames.authorisation -> authToken, HeaderNames.xSessionId -> sessionId)
