@@ -7,7 +7,7 @@
     }
   ],
   "api": {
-    "name": "Web Session",
+    "name": "Web Session API",
     "description": "Provides web/browser access to the current API user.",
     "context": "web-session/sso-api",
     "requiresTrust": true,
