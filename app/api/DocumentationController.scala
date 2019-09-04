@@ -17,13 +17,17 @@
 package api
 
 import javax.inject.Inject
-
 import controllers.Assets
-import play.api.mvc.Controller
+import play.api.Configuration
+import play.api.http.MimeTypes
+import play.api.mvc.{Action, AnyContent, Controller}
 
-class DocumentationController @Inject() (assets: Assets) extends Controller {
-  def definition() = {
-    assets.at(s"/public/api", "definition.json")
+class DocumentationController @Inject() (assets: Assets, config: Configuration) extends Controller {
+
+  private lazy val whitelist = config.getStringSeq("api.access.version-1.0.whitelistedApplicationIds").getOrElse(Nil)
+
+  def definition(): Action[AnyContent] = Action { _ =>
+    Ok(views.txt.definition(whitelist)).withHeaders(CONTENT_TYPE -> MimeTypes.JSON)
   }
 
   def raml(version: String, file: String) = {

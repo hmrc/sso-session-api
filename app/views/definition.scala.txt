@@ -1,3 +1,7 @@
+@import play.api.libs.json.Json
+
+@(whitelistedApplicationIds: Seq[String])
+
 {
   "scopes": [
     {
@@ -10,12 +14,15 @@
     "name": "Web Session API",
     "description": "Provides web/browser access to the current API user.",
     "context": "web-session/sso-api",
-    "requiresTrust": true,
     "versions": [
       {
         "version": "1.0",
         "status": "STABLE",
-        "endpointsEnabled": true
+        "endpointsEnabled": true,
+        "access": {
+          "type": "PRIVATE",
+          "whitelistedApplicationIds": @Json.toJson(whitelistedApplicationIds)
+        }
       }
     ]
   }
