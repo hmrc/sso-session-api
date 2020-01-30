@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,52 +18,51 @@ package websession.create
 
 import java.net.URL
 import java.util.UUID
-import javax.inject.{Inject, Singleton}
 
+import javax.inject.{Inject, Singleton}
 import audit.AuditEvent
 import auth.FrontendAuthConnector
 import connectors.SsoConnector
 import play.api.libs.json.Json
 import play.api.libs.json.Json.JsValueWrapper
-import play.api.mvc.Result
-import uk.gov.hmrc.config._
+import play.api.mvc.{Action, AnyContent, Result}
+import config._
 import uk.gov.hmrc.crypto.PlainText
-import uk.gov.hmrc.domains.{ContinueUrlValidator, WhitelistedContinueUrl}
+import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
 import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, Upstream4xxResponse}
 import uk.gov.hmrc.play.HeaderCarrierConverter
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.binders.ContinueUrl
-import uk.gov.hmrc.play.frontend.auth.connectors.domain.Authority
-import uk.gov.hmrc.play.frontend.controller.{ActionWithMdc, FrontendController}
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import websession.ApiToken
 
 import scala.concurrent.Future
 
 @Singleton
 class ApiTokenController @Inject() (val ssoConnector:         SsoConnector,
-                                    val ssoCrypto:            SsoCrypto,
                                     val authConnector:        FrontendAuthConnector,
-                                    val auditConnector:       SsoFrontendAuditConnector,
+                                    val auditConnector:       AuditConnector,
                                     val frontendAppConfig:    FrontendAppConfig,
                                     val continueUrlValidator: ContinueUrlValidator
 ) extends FrontendController with WhitelistedContinueUrl {
 
-  def create(continueUrl: ContinueUrl) = ActionWithMdc.async { implicit request =>
+  def create(continueUrl: ContinueUrl): Action[AnyContent] = Action.async { implicit request =>
 
       def redeemUrl(tokenUrl: URL): JsValueWrapper = {
-        val encrypted = new String(ssoCrypto.encrypt(PlainText(tokenUrl.toString)).toBase64)
+        val encrypted = new String(frontendAppConfig.encrypt(PlainText(tokenUrl.toString)).toBase64)
         s"${frontendAppConfig.ssoFeHost}/sso/session?token=$encrypted"
       }
 
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
       .copy(sessionId = Some(SessionId(s"session-${UUID.randomUUID().toString}")))
 
-    withAuthentication { auth =>
-      withWhitelistedContinueUrl(continueUrl) {
+    authConnector.getAuthUri().flatMap {
+      case Some(authResponse) => withWhitelistedContinueUrl(continueUrl) {
         val maybeApiToken = for {
           bearer <- hc.authorization
           sessionId <- hc.sessionId
-        } yield ApiToken(bearer.value, sessionId.value, continueUrl.url, auth.uri)
+        } yield ApiToken(bearer.value, sessionId.value, continueUrl.url, authResponse.uri)
 
         maybeApiToken.fold {
           throw new BadRequestException("No Authorisation header in the request")
@@ -80,14 +79,8 @@ class ApiTokenController @Inject() (val ssoConnector:         SsoConnector,
             ))
         }
       }
-    }
-  }
-
-  private def withAuthentication(body: Authority => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    authConnector.currentAuthority flatMap {
-      case Some(auth) => body(auth)
-      case _          => Future.successful(Unauthorized)
-    } recover {
+      case _ => Future.successful(Unauthorized)
+    }.recover {
       case Upstream4xxResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq): _*)
       case Upstream4xxResponse(_, FORBIDDEN, _, headers)    => Forbidden.withHeaders(unGroup(headers.toSeq): _*)
       case e: BadRequestException                           => BadRequest(e.message)

@@ -2,17 +2,19 @@ package base
 
 import java.util.UUID
 
+import config.FrontendAppConfig
+import play.api.Configuration
 import play.api.libs.json.{JsArray, Json}
 import play.api.libs.ws.WSResponse
 import play.api.mvc.Session
-import uk.gov.hmrc.config.FrontendGlobal
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Crypted, PlainText}
-import uk.gov.hmrc.gg.test.it.{SessionCookieEncryptionSupport, SmIntegrationSpecBase}
+import uk.gov.hmrc.gg.test.it.SmIntegrationSpecBase
 import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, SessionKeys}
 import uk.gov.hmrc.play.http.ws.WSRequest
+import uk.gov.hmrc.play.it.SessionCookieEncryptionSupport
 
 
-trait BaseISpec extends SmIntegrationSpecBase with WSRequest with SessionCookieEncryptionSupport {
+trait BaseISpec extends SmIntegrationSpecBase with SessionCookieEncryptionSupport {
 
   override protected def extraConfig = Map(
     "Test.microservice.services.service-locator.enabled" -> false
@@ -37,7 +39,7 @@ trait BaseISpec extends SmIntegrationSpecBase with WSRequest with SessionCookieE
         "sessionId" -> "sessionId")
     )
 
-    val exchangeResult = await(buildRequest(getAuthApiResource(s"/government-gateway/session/login")).post(request))
+    val exchangeResult = await(wsClient.url(getAuthApiResource(s"/government-gateway/session/login")).post(request))
     val authToken = exchangeResult.header("Authorization").getOrElse("")
     val authUri = exchangeResult.header("Location").getOrElse("")
 
@@ -55,18 +57,17 @@ trait BaseISpec extends SmIntegrationSpecBase with WSRequest with SessionCookieE
   }
 
   def redeemToken(fullRedeemUrl: String) : WSResponse = {
-    await(buildRequest(fullRedeemUrl).withSession(SessionKeys.lastRequestTimestamp -> System.currentTimeMillis.toString).withFollowRedirects(false).get())
+    await(wsClient.url(fullRedeemUrl).withSession(SessionKeys.lastRequestTimestamp -> System.currentTimeMillis.toString).withFollowRedirects(false).get())
   }
 
+  val config = app.injector.instanceOf(classOf[Configuration])
+
   def decryptCookie(mdtpSessionCookieValue: String): Map[String, String] = {
-    val applicationCrypto = new ApplicationCrypto(FrontendGlobal.runModeConfiguration.underlying)
+    val applicationCrypto = new ApplicationCrypto(config.underlying)
 
     applicationCrypto.SessionCookieCrypto.decrypt(Crypted(mdtpSessionCookieValue)) match {
       case PlainText(v) => Session.decode(v)
       case _ => Map.empty[String, String]
     }
   }
-
-  override def applicableHeaders(url: String)(implicit hc: HeaderCarrier) = Nil
-
 }
