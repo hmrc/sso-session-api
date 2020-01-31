@@ -2,7 +2,6 @@ package base
 
 import java.util.UUID
 
-import config.FrontendAppConfig
 import play.api.Configuration
 import play.api.libs.json.{JsArray, Json}
 import play.api.libs.ws.WSResponse
@@ -10,7 +9,6 @@ import play.api.mvc.Session
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Crypted, PlainText}
 import uk.gov.hmrc.gg.test.it.SmIntegrationSpecBase
 import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, SessionKeys}
-import uk.gov.hmrc.play.http.ws.WSRequest
 import uk.gov.hmrc.play.it.SessionCookieEncryptionSupport
 
 

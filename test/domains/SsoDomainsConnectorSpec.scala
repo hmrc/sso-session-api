@@ -16,6 +16,7 @@
 
 package domains
 
+import config.AppConfig
 import connectors.SsoDomainsConnector
 import org.scalatest.concurrent.ScalaFutures
 import play.api.http.HeaderNames
@@ -37,12 +38,11 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
 
     val mockHttp = mock[HttpClient]
     val serviceBaseURL = "http://mockbaseurl:1234"
+    val mockAppConfig = mock[AppConfig]
 
     //so we can mock dependencies pulled in via other traits by overriding them
-    class TestSsoDomainsConnector extends SsoDomainsConnector(mockHttp) {
+    class TestSsoDomainsConnector extends SsoDomainsConnector(mockHttp, mockAppConfig) {
       override implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = scala.concurrent.ExecutionContext.global
-
-      override def baseUrl(serviceName: String): String = serviceBaseURL
     }
 
     val ssoDomainsConnector = new TestSsoDomainsConnector()
@@ -52,6 +52,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
   "SsoDomainsConnector" should {
 
     "return Future[DomainsResponse] and max-age value when getDomains() is called" in new Setup {
+      when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockWhiteListedDomains = WhiteListedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
       when(mockHttp.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
@@ -75,6 +76,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
     }
 
     "return Future[DomainsResponse] and default max-age value when getDomains() is called where no max-age header in http response" in new Setup {
+      when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockWhiteListedDomains = WhiteListedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
       when(mockHttp.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(

@@ -19,13 +19,13 @@ package connectors
 import java.net.URL
 
 import com.google.inject.Inject
+import config.AppConfig
 import javax.inject.Singleton
 import play.api.cache.CacheApi
 import play.api.http.HeaderNames
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
-import uk.gov.hmrc.gg.config.GenericAppConfig
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
@@ -37,10 +37,10 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SsoConnector @Inject() (override val cache: CacheApi, val http: HttpClient) extends ApiJsonFormats with PlayCache with ServicesConfig with GenericAppConfig {
+class SsoConnector @Inject() (override val cache: CacheApi, val http: HttpClient, appConfig: AppConfig) extends ApiJsonFormats with PlayCache {
 
   implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = MdcLoggingExecutionContext.fromLoggingDetails(loggingDetails)
-  def serviceUrl = new URL(baseUrl("sso"))
+  def serviceUrl = new URL(appConfig.ssoUrl)
 
   def getRootAffordance(reader: JsValue => String)(implicit hc: HeaderCarrier): Future[URL] = {
     for {

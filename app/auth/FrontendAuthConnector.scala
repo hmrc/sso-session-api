@@ -16,7 +16,7 @@
 
 package auth
 
-import config.FrontendAppConfig
+import config.AppConfig
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -25,7 +25,7 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class FrontendAuthConnector @Inject() (httpClient: HttpClient, frontendAppConfig: FrontendAppConfig) {
+class FrontendAuthConnector @Inject() (httpClient: HttpClient, frontendAppConfig: AppConfig) {
   def getAuthUri()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AuthResponse]] = {
     httpClient.GET[Option[AuthResponse]](s"${frontendAppConfig.authServiceUrl}/auth/authority")
   }

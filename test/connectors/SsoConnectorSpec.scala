@@ -18,6 +18,7 @@ package connectors
 
 import java.net.URL
 
+import config.AppConfig
 import org.scalatest.concurrent.ScalaFutures
 import play.api.cache.CacheApi
 import play.api.libs.json.{JsValue, Json}
@@ -46,11 +47,9 @@ class SsoConnectorSpec extends UnitSpec with ScalaFutures with ApiJsonFormats {
     val serviceBaseURL = "http://mockbaseurl:1234"
     val token = ApiToken("mockBearerToken", "mockSessionID", "mockContinueURL", "mockUserID")
     val ssnInfo = SsoInSessionInfo("bearerToken", "sessionID", "userID")
+    val mockAppConfig = mock[AppConfig]
 
-    class TestSsoConnector extends SsoConnector(cache, http) {
-
-      override def baseUrl(serviceName: String): String = serviceBaseURL
-
+    class TestSsoConnector extends SsoConnector(cache, http, mockAppConfig) {
       override implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = scala.concurrent.ExecutionContext.global
     }
 
@@ -63,6 +62,7 @@ class SsoConnectorSpec extends UnitSpec with ScalaFutures with ApiJsonFormats {
     "return affordance URI using given json reader" in new Setup {
 
       when(cache.get[HttpResponse](any)(any)).thenReturn(None)
+      when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
 
       when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
         HttpResponse(
@@ -78,6 +78,7 @@ class SsoConnectorSpec extends UnitSpec with ScalaFutures with ApiJsonFormats {
 
     "on calling createToken, POST request to sso createTokensURL, return url constructed from the response LOCATION header" in new Setup {
       when(cache.get[HttpResponse](any)(any)).thenReturn(None)
+      when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
 
       when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
         HttpResponse(
@@ -103,6 +104,8 @@ class SsoConnectorSpec extends UnitSpec with ScalaFutures with ApiJsonFormats {
 
     "on calling createToken, POST request to sso createTokensURL, throw exception when no url in response LOCATION header" in new Setup {
       when(cache.get[HttpResponse](any)(any)).thenReturn(None)
+      when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
+
       when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful((HttpResponse(
         200,
         Option[JsValue](Json.parse("{\"api-tokens\":\"http://mock-create-token-url\"}")),

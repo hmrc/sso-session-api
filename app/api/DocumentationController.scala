@@ -16,15 +16,17 @@
 
 package api
 
-import javax.inject.Inject
 import controllers.Assets
+import javax.inject.Inject
 import play.api.Configuration
 import play.api.http.MimeTypes
-import play.api.mvc.{Action, AnyContent, Controller}
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
-class DocumentationController @Inject() (assets: Assets, config: Configuration) extends Controller {
+class DocumentationController @Inject() (assets: Assets, config: Configuration, messagesControllerComponents: MessagesControllerComponents)
+  extends FrontendController(messagesControllerComponents) {
 
-  private lazy val whitelist = config.getStringSeq("api.access.version-1.0.whitelistedApplicationIds").getOrElse(Nil)
+  private lazy val whitelist = config.getOptional[Seq[String]]("api.access.version-1.0.whitelistedApplicationIds").getOrElse(Nil)
 
   def definition(): Action[AnyContent] = Action { _ =>
     Ok(views.txt.definition(whitelist)).withHeaders(CONTENT_TYPE -> MimeTypes.JSON)

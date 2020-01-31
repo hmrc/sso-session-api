@@ -25,7 +25,7 @@ import auth.FrontendAuthConnector
 import connectors.SsoConnector
 import play.api.libs.json.Json
 import play.api.libs.json.Json.JsValueWrapper
-import play.api.mvc.{Action, AnyContent, Result}
+import play.api.mvc.{Action, AnyContent, ControllerComponents, MessagesControllerComponents, Result}
 import config._
 import uk.gov.hmrc.crypto.PlainText
 import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
@@ -34,23 +34,24 @@ import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, Upstream4xxResponse
 import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.binders.ContinueUrl
-import uk.gov.hmrc.play.bootstrap.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.controller.{BackendController, FrontendController}
 import websession.ApiToken
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ApiTokenController @Inject() (val ssoConnector:         SsoConnector,
                                     val authConnector:        FrontendAuthConnector,
                                     val auditConnector:       AuditConnector,
-                                    val frontendAppConfig:    FrontendAppConfig,
-                                    val continueUrlValidator: ContinueUrlValidator
-) extends FrontendController with WhitelistedContinueUrl {
+                                    val frontendAppConfig:    AppConfig,
+                                    val continueUrlValidator: ContinueUrlValidator,
+                                    controllerComponents:     MessagesControllerComponents)(implicit executionContext: ExecutionContext) extends FrontendController(controllerComponents) with WhitelistedContinueUrl {
 
   def create(continueUrl: ContinueUrl): Action[AnyContent] = Action.async { implicit request =>
 
       def redeemUrl(tokenUrl: URL): JsValueWrapper = {
         val encrypted = new String(frontendAppConfig.encrypt(PlainText(tokenUrl.toString)).toBase64)
+        println(s"${frontendAppConfig.ssoFeHost}/sso/session?token=$encrypted")
         s"${frontendAppConfig.ssoFeHost}/sso/session?token=$encrypted"
       }
 
