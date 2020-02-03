@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,28 +18,27 @@ package connectors
 
 import java.net.URL
 
-import javax.inject.Singleton
+import domains.{DomainsResponse, WhiteListedDomains}
+import javax.inject.{Inject, Singleton}
 import play.api.http.HeaderNames
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.config.{FrontendGlobal, WSHttp}
-import uk.gov.hmrc.domains.{DomainsResponse, WhiteListedDomains}
 import uk.gov.hmrc.gg.config.GenericAppConfig
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.LoggingDetails
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SsoDomainsConnector extends ServicesConfig with GenericAppConfig {
+class SsoDomainsConnector @Inject() (http: HttpClient) extends ServicesConfig with GenericAppConfig {
 
   private val DefaultTTL = 60
   private val MaxAgeHeaderPattern = "max-age=(\\d+)".r
 
   implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = MdcLoggingExecutionContext.fromLoggingDetails(loggingDetails)
   def serviceUrl = new URL(baseUrl("sso"))
-  def http: WSHttp = WSHttp
 
   implicit val whiteListedDomainsFormat: OFormat[WhiteListedDomains] = Json.format[WhiteListedDomains]
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,16 @@
 package service
 
 import connectors.SsoDomainsConnector
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito._
+import domains.{CachedDomainsService, DomainsResponse, WhiteListedDomains}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
 import play.api.cache.CacheApi
-import uk.gov.hmrc.domains.{CachedDomainsService, DomainsResponse}
+import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, SECONDS}
 
-class CachedDomainsServiceSpec extends UnitSpec with MockitoSugar with ScalaFutures {
+class CachedDomainsServiceSpec extends UnitSpec with ScalaFutures {
 
   trait Setup {
     implicit val hc = HeaderCarrier()
@@ -40,7 +37,7 @@ class CachedDomainsServiceSpec extends UnitSpec with MockitoSugar with ScalaFutu
     val domainsFromRealSSO = mock[DomainsResponse]
     val ssoResponseWithSuggestedTTL = (domainsFromRealSSO, Some("max-age=123"))
     val ssoResponseWithNoTTL = (domainsFromRealSSO, None)
-    val cachedDomains = mock[DomainsResponse]
+    val cachedDomains = DomainsResponse(WhiteListedDomains(Set.empty, Set.empty), 0)
 
     val cachedDomainsService = new CachedDomainsService(ssoDomainsConnectorMock, cacheMock)
   }
@@ -49,6 +46,7 @@ class CachedDomainsServiceSpec extends UnitSpec with MockitoSugar with ScalaFutu
 
     "delegate to the real connector which the cache misses" in new Setup {
       when(cacheMock.get[DomainsResponse]("sso/domains")).thenReturn(None)
+      when(cacheMock.set(eqTo("sso/domains"), any, any)).isLenient()
       when(ssoDomainsConnectorMock.getDomains()(any[HeaderCarrier])).thenReturn(Future.successful(domainsFromRealSSO))
       when(domainsFromRealSSO.maxAge).thenReturn(123)
       cachedDomainsService.getDomains().futureValue shouldBe Some(domainsFromRealSSO)
@@ -56,8 +54,7 @@ class CachedDomainsServiceSpec extends UnitSpec with MockitoSugar with ScalaFutu
 
     "return the cached value if the cache is populated" in new Setup {
       when(cacheMock.get[DomainsResponse]("sso/domains")).thenReturn(Some(cachedDomains))
-      when(ssoDomainsConnectorMock.getDomains()(any[HeaderCarrier])).thenReturn(Future.successful(domainsFromRealSSO))
-      when(domainsFromRealSSO.maxAge).thenReturn(123)
+      when(cacheMock.set(eqTo("sso/domains"), any, any)).isLenient()
       cachedDomainsService.getDomains().futureValue shouldBe Some(cachedDomains)
       verifyZeroInteractions(ssoDomainsConnectorMock)
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,40 +14,37 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.domains
+package domains
 
 import connectors.SsoDomainsConnector
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
-import uk.gov.hmrc.config.WSHttp
+import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures with MockitoSugar with WithFakeApplication {
+class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
 
   trait Setup {
 
     implicit val hc = mock[HeaderCarrier]
     implicit val ec = scala.concurrent.ExecutionContext.global
 
-    object Mock {
-      val http = mock[WSHttp]
-      val serviceBaseURL = "http://mockbaseurl:1234"
-    }
+    val mockHttp = mock[HttpClient]
+    val serviceBaseURL = "http://mockbaseurl:1234"
 
     //so we can mock dependencies pulled in via other traits by overriding them
-    class TestSsoDomainsConnector extends SsoDomainsConnector {
-      override def http = Mock.http
-      override def baseUrl(serviceName: String): String = Mock.serviceBaseURL
+    class TestSsoDomainsConnector extends SsoDomainsConnector(mockHttp) {
       override implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = scala.concurrent.ExecutionContext.global
+
+      override def baseUrl(serviceName: String): String = serviceBaseURL
     }
+
     val ssoDomainsConnector = new TestSsoDomainsConnector()
 
   }
@@ -57,7 +54,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures with MockitoSug
     "return Future[DomainsResponse] and max-age value when getDomains() is called" in new Setup {
       val mockWhiteListedDomains = WhiteListedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(Mock.http.GET[HttpResponse](any())(any(), any(), any())).thenReturn(Future.successful(
+      when(mockHttp.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
         HttpResponse(
           200,
           Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains)),
@@ -69,8 +66,8 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures with MockitoSug
       val fDomains = ssoDomainsConnector.getDomains()
       whenReady(fDomains) {
         case DomainsResponse(WhiteListedDomains(extDomains, intDomains), maxAge) => {
-          extDomains.collectFirst[String] { case s => s } shouldBe Some("domain1.com")
-          intDomains.collectFirst[String] { case s => s } shouldBe Some("domain3.com")
+          extDomains.headOption shouldBe Some("domain1.com")
+          intDomains.headOption shouldBe Some("domain3.com")
           maxAge shouldBe 33
         }
         case _ => fail("WhiteListedDomains expected")
@@ -80,7 +77,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures with MockitoSug
     "return Future[DomainsResponse] and default max-age value when getDomains() is called where no max-age header in http response" in new Setup {
       val mockWhiteListedDomains = WhiteListedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(Mock.http.GET[HttpResponse](any())(any(), any(), any())).thenReturn(Future.successful(
+      when(mockHttp.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
         HttpResponse(
           200,
           Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains)),
@@ -92,8 +89,8 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures with MockitoSug
       val fDomains = ssoDomainsConnector.getDomains()
       whenReady(fDomains) {
         case DomainsResponse(WhiteListedDomains(extDomains, intDomains), maxAge) => {
-          extDomains.collectFirst[String] { case s => s } shouldBe Some("domain1.com")
-          intDomains.collectFirst[String] { case s => s } shouldBe Some("domain3.com")
+          extDomains.headOption shouldBe Some("domain1.com")
+          intDomains.headOption shouldBe Some("domain3.com")
           maxAge shouldBe 60
         }
         case _ => fail("WhiteListedDomains expected")

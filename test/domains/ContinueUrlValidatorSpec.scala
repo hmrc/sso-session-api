@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package controllers
+package domains
 
-import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
-import uk.gov.hmrc.domains.{ContinueUrlValidator, WhiteListService}
+import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.binders._
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ContinueUrlValidatorSpec extends UnitSpec with MockitoSugar with ScalaFutures with WithFakeApplication {
+class ContinueUrlValidatorSpec extends UnitSpec with ScalaFutures {
 
   trait Setup {
-    val whiteListServiceMock = mock[WhiteListService]
+    val whiteListServiceMock: WhiteListService = mock[WhiteListService]
     val continueUrlValidator = new ContinueUrlValidator(whiteListServiceMock)
-    implicit val hc = HeaderCarrier()
+    implicit val hc: HeaderCarrier = HeaderCarrier()
   }
 
   "isRelativeOrAbsoluteWhiteListed" should {
@@ -43,13 +40,13 @@ class ContinueUrlValidatorSpec extends UnitSpec with MockitoSugar with ScalaFutu
 
     "return true if continueUrl is absolute whitelisted" in new Setup {
       val url = ContinueUrl("http://absolute/whitelisted")
-      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(url)).thenReturn(Future(true))
+      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(eqTo(url), *)(*)).thenReturn(Future(true))
       await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(url)) shouldBe true
     }
 
     "return false if continueUrl is not relative or absolute whitelisted" in new Setup {
       val url = ContinueUrl("http://not-relative-or-absolute-whitelisted")
-      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(url)).thenReturn(Future(false))
+      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(eqTo(url), *)(*)).thenReturn(Future(false))
       await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(url)) shouldBe false
     }
 
@@ -63,13 +60,13 @@ class ContinueUrlValidatorSpec extends UnitSpec with MockitoSugar with ScalaFutu
 
     "return true if continueUrl is internal" in new Setup {
       val url = ContinueUrl("http://absolute/whitelisted")
-      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(url)).thenReturn(Future(true))
+      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(eqTo(url), *)(*)).thenReturn(Future(true))
       await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(url)) shouldBe true
     }
 
     "return false if continueUrl is not relative or internal" in new Setup {
       val url = ContinueUrl("http://not-relative-or-absolute-whitelisted")
-      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(url)).thenReturn(Future(false))
+      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(eqTo(url), *)(*)).thenReturn(Future(false))
       await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(url)) shouldBe false
     }
 

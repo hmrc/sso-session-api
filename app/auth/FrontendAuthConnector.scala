@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,24 @@
 
 package auth
 
-import com.google.inject.Inject
-import javax.inject.Singleton
-import uk.gov.hmrc.config.WSHttp
-import uk.gov.hmrc.gg.config.GenericAppConfig
+import config.FrontendAppConfig
+import javax.inject.{Inject, Singleton}
+import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.frontend.auth.connectors.AuthConnector
-import uk.gov.hmrc.play.frontend.auth.connectors.domain.Authority
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class FrontendAuthConnector extends AuthConnector with ServicesConfig with GenericAppConfig {
-  val serviceUrl = baseUrl("auth")
-  lazy val http = WSHttp
-
-  def getAuthority(authUri: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Authority]] = {
-    http.GET[Option[Authority]](serviceUrl + authUri)
+class FrontendAuthConnector @Inject() (httpClient: HttpClient, frontendAppConfig: FrontendAppConfig) {
+  def getAuthUri()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AuthResponse]] = {
+    httpClient.GET[Option[AuthResponse]](s"${frontendAppConfig.authServiceUrl}/auth/authority")
   }
+}
+
+case class AuthResponse(uri: String)
+
+object AuthResponse {
+  implicit val format: OFormat[AuthResponse] = Json.format[AuthResponse]
 }
 

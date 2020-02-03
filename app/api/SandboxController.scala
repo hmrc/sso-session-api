@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,11 @@
 package api
 
 import javax.inject.{Inject, Singleton}
-
 import play.api.libs.json.Json
 import play.api.mvc._
-import uk.gov.hmrc.domains.{ContinueUrlValidator, WhitelistedContinueUrl}
+import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
 import uk.gov.hmrc.play.binders.ContinueUrl
-import uk.gov.hmrc.play.frontend.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
 import scala.concurrent.Future
 

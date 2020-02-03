@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,15 @@ import java.net.URL
 
 import com.google.inject.Inject
 import javax.inject.Singleton
-import play.api.Configuration
-import play.api.Mode.Mode
 import play.api.cache.CacheApi
 import play.api.http.HeaderNames
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
-import uk.gov.hmrc.config.{FrontendGlobal, WSHttp}
 import uk.gov.hmrc.gg.config.GenericAppConfig
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.LoggingDetails
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
 import websession._
@@ -39,11 +37,10 @@ import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SsoConnector @Inject() (override val cache: CacheApi) extends ApiJsonFormats with PlayCache with ServicesConfig with GenericAppConfig {
+class SsoConnector @Inject() (override val cache: CacheApi, val http: HttpClient) extends ApiJsonFormats with PlayCache with ServicesConfig with GenericAppConfig {
 
   implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = MdcLoggingExecutionContext.fromLoggingDetails(loggingDetails)
   def serviceUrl = new URL(baseUrl("sso"))
-  def http: WSHttp = WSHttp
 
   def getRootAffordance(reader: JsValue => String)(implicit hc: HeaderCarrier): Future[URL] = {
     for {
