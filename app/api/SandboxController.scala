@@ -16,19 +16,20 @@
 
 package api
 
+import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.api.mvc._
-import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
 import uk.gov.hmrc.play.binders.ContinueUrl
-import uk.gov.hmrc.play.bootstrap.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.controller.{BackendController, FrontendController}
 
 import scala.concurrent.Future
 
 @Singleton
-class SandboxController @Inject() (val continueUrlValidator: ContinueUrlValidator) extends FrontendController with WhitelistedContinueUrl {
+class SandboxController @Inject() (val continueUrlValidator: ContinueUrlValidator,
+                                   controllerComponents:     MessagesControllerComponents) extends FrontendController(controllerComponents) with WhitelistedContinueUrl {
 
-  def create(continueUrl: ContinueUrl) = Action.async { implicit request =>
+  def create(continueUrl: ContinueUrl): Action[AnyContent] = Action.async { implicit request =>
     withWhitelistedContinueUrl(continueUrl) {
       Future.successful(
         Ok(Json.obj(

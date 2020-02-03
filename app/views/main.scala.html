@@ -14,7 +14,9 @@
  * limitations under the License.
  *@
 
+@import uk.gov.hmrc.play.views.{html => play_ui}
 @import views.html.layouts.govuk_template
+
 @(title: String,
 sidebarLinks: Option[Html] = None,
 sidebarClass: Option[String] = None,
@@ -35,46 +37,44 @@ reportAProblemPartialUrl: String,
 reportAProblemNonJSUrl: String
 )(mainContent: Html)(implicit request: Request[_], messages: Messages)
 
-@import uk.gov.hmrc.play.views.html.{helpers, layouts}
+
 
 @head = {
-  @layouts.head(linkElement, headScripts)
+  @play_ui.layouts.head(linkElement, headScripts)
 }
 
 @insideHeader = {}
 
 @afterHeader = {}
 
-@betaBanner = @{
-  HtmlFormat.empty
-}
+@betaBanner = {}
 
 @serviceInfo = {
-  @layouts.serviceInfo(betaBanner, includeGridWrapper, serviceInfoContent)
+  @play_ui.layouts.serviceInfo(betaBanner, includeGridWrapper, serviceInfoContent)
 }
 
 @getHelpForm = {
-  @helpers.reportAProblemLink(reportAProblemPartialUrl, reportAProblemNonJSUrl)
+  @play_ui.helpers.reportAProblemLink(reportAProblemPartialUrl, reportAProblemNonJSUrl)
 }
 
 @sidebar = {
   @sidebarLinks.map { sbl =>
-    @layouts.sidebar(sbl, sidebarClass)
+    @play_ui.layouts.sidebar(sbl, sidebarClass)
   }
 }
 
 @article = {
-  @layouts.article(mainContent, includeGridWrapper, articleClasses)
+  @play_ui.layouts.article(mainContent, includeGridWrapper, articleClasses)
 }
 
 @mainContentHeader = {
   @contentHeader.map { ch =>
-    @layouts.main_content_header(ch)
+    @play_ui.layouts.main_content_header(ch)
   }
 }
 
 @content = {
-  @layouts.main_content(article,
+  @play_ui.layouts.main_content(article,
                         mainClass = None,
                         mainDataAttributes = None,
                         mainContentHeader,
@@ -87,7 +87,7 @@ reportAProblemNonJSUrl: String
 }
 
 @bodyEnd = {
-  @layouts.footer(
+  @play_ui.layouts.footer(
     analyticsToken = analyticsToken,
     analyticsHost = analyticsHost,
     ssoUrl = ssoUrl,

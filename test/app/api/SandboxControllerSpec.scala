@@ -17,19 +17,20 @@
 package app.api
 
 import api.SandboxController
+import domains.{ContinueUrlValidator, WhiteListService}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json._
+import play.api.mvc.MessagesControllerComponents
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import domains.{ContinueUrlValidator, WhiteListService}
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.binders.ContinueUrl
 
 import scala.concurrent.Future
 
-class SandboxControllerSpec extends UnitSpec with ScalaFutures {
+class SandboxControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
   val whiteListService: WhiteListService = mock[WhiteListService]
 
   object succeedingValidator extends ContinueUrlValidator(whiteListService) {
@@ -43,7 +44,9 @@ class SandboxControllerSpec extends UnitSpec with ScalaFutures {
   "SandboxController" should {
     "Return a 200 and the correct JSON for a GET" in {
       val continueUrl = mock[ContinueUrl]
-      val controller = new SandboxController(succeedingValidator)
+      val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
+
+      val controller = new SandboxController(succeedingValidator, messagesControllerComponents)
       val result = controller.create(continueUrl)(FakeRequest())
 
       status(result) shouldBe OK
@@ -52,7 +55,8 @@ class SandboxControllerSpec extends UnitSpec with ScalaFutures {
 
     "Redirect if the ContinueURL is not valid" in {
       val continueUrl = mock[ContinueUrl]
-      val controller = new SandboxController(failingValidator)
+      val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf(classOf[MessagesControllerComponents])
+      val controller = new SandboxController(failingValidator, messagesControllerComponents)
       val result = controller.create(continueUrl)(FakeRequest())
 
       status(result) shouldBe BAD_REQUEST

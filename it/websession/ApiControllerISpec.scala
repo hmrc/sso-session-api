@@ -1,6 +1,7 @@
 package websession
 
 import base.BaseISpec
+import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.http.SessionKeys
 
 class ApiControllerISpec extends BaseISpec {
@@ -15,7 +16,7 @@ class ApiControllerISpec extends BaseISpec {
     "create an api sso token with random session-id" in new Setup {
       val (authToken, userId) = signInToGetTokenAndAuthUri(username)
 
-      val response = createApiToken("/somewhere", authToken, sessionId)
+      val response: WSResponse = createApiToken("/somewhere", authToken, sessionId)
       response.status shouldBe 200
 
       val deviceIdCookie1 = response.cookie("mdtpdi").get.value
@@ -27,7 +28,7 @@ class ApiControllerISpec extends BaseISpec {
       val redeemResponse = redeemToken(redeemTokenUrl)
       redeemResponse.status shouldBe 303
       redeemResponse.header("Location") shouldBe Some("/somewhere")
-      val cookie = decryptCookie(redeemResponse.cookie("mdtp").get.value.get)
+      val cookie = decryptCookie(redeemResponse.cookie("mdtp").get.value)
       cookie should {
         contain(SessionKeys.authToken -> authToken) and
           contain(SessionKeys.userId -> userId) and
@@ -40,6 +41,5 @@ class ApiControllerISpec extends BaseISpec {
       val deviceIdCookie2 = redeemResponse.cookie("mdtpdi").get.value
       deviceIdCookie2 shouldNot be(empty)
     }
-
   }
 }

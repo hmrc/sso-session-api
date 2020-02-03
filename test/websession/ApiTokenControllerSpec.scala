@@ -27,6 +27,8 @@ import domains.ContinueUrlValidator
 import org.apache.commons.codec.binary.Base64
 import org.mockito.ArgumentCaptor
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.mvc.MessagesControllerComponents
 import play.api.test.FakeRequest
 import uk.gov.hmrc.crypto._
 import uk.gov.hmrc.gg.test.UnitSpec
@@ -37,10 +39,11 @@ import uk.gov.hmrc.play.binders.ContinueUrl
 import websession.create.ApiTokenController
 import play.api.test.Helpers._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
-class ApiTokenControllerSpec extends UnitSpec with ScalaFutures {
+class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
   trait Setup {
     val ssoFeHost = "ssoFeHost"
@@ -63,19 +66,21 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures {
       HmrcHeaderNames.authorisation -> bearerToken
     )
 
-    val mockAppConfig = mock[FrontendAppConfig]
+    val mockAppConfig = mock[AppConfig]
 
     val mockSsoConnector = mock[SsoConnector]
     val mockAuthConnector = mock[FrontendAuthConnector]
     val mockAuditConnector = mock[AuditConnector]
     val mockContinueUrlValidator = mock[ContinueUrlValidator]
+    val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
 
     val apiTokenController = new ApiTokenController(
       ssoConnector         = mockSsoConnector,
       authConnector        = mockAuthConnector,
       auditConnector       = mockAuditConnector,
       frontendAppConfig    = mockAppConfig,
-      continueUrlValidator = mockContinueUrlValidator
+      continueUrlValidator = mockContinueUrlValidator,
+      messagesControllerComponents
     )
   }
 

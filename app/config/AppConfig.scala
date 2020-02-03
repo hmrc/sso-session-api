@@ -16,23 +16,24 @@
 
 package config
 
+import java.net.URL
+
 import javax.inject.Inject
 import play.api.Configuration
 import uk.gov.hmrc.crypto.{Crypted, CryptoGCMWithKeysFromConfig, Decrypter, Encrypter, PlainBytes, PlainContent, PlainText}
-import uk.gov.hmrc.gg.config.GenericAppConfig
-import uk.gov.hmrc.play.config.{RunMode, ServicesConfig}
+import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
 
-class FrontendAppConfig @Inject() (configuration: Configuration) extends Decrypter with Encrypter with ServicesConfig with RunMode with GenericAppConfig {
+class AppConfig @Inject() (configuration: Configuration, servicesConfig: ServicesConfig, runMode: RunMode) extends Decrypter with Encrypter {
 
-  val analyticsHost: String = configuration.getString(s"$env.google-analytics.host").getOrElse("service.gov.uk")
+  lazy val analyticsHost: String = configuration.getOptional[String](s"${runMode.env}.google-analytics.host").getOrElse("service.gov.uk")
+  lazy val ssoFeHost: String = configuration.getOptional[String](s"${runMode.env}.sso-fe.host").getOrElse("")
 
   lazy val appName: String = loadConfig("appName")
   lazy val appUrl: String = loadConfig("appUrl")
-  lazy val authServiceUrl: String = baseUrl("auth")
+  lazy val authServiceUrl: String = servicesConfig.baseUrl("auth")
+  lazy val ssoUrl: String = servicesConfig.baseUrl("sso")
 
-  lazy val ssoFeHost: String = configuration.getString(s"$env.sso-fe.host").getOrElse("")
-
-  private def loadConfig(key: String): String = configuration.getString(key).getOrElse(throw new Exception(s"Missing configuration key: $key"))
+  private def loadConfig(key: String): String = configuration.get[String](key)
 
   val crypto = new CryptoGCMWithKeysFromConfig(baseConfigKey = "sso.encryption", configuration.underlying)
   override def decrypt(reversiblyEncrypted: Crypted): PlainText = crypto.decrypt(reversiblyEncrypted)
