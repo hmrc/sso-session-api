@@ -18,35 +18,37 @@ package app.api
 
 import api.SandboxController
 import domains.{ContinueUrlValidator, WhiteListService}
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json._
 import play.api.mvc.MessagesControllerComponents
-import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.{FakeRequest, Injecting}
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.binders.ContinueUrl
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class SandboxControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
+class SandboxControllerSpec extends UnitSpec with GuiceOneAppPerSuite with Injecting {
   val whiteListService: WhiteListService = mock[WhiteListService]
 
   object succeedingValidator extends ContinueUrlValidator(whiteListService) {
-    override def isRelativeOrAbsoluteWhiteListed(continueUrl: ContinueUrl)(implicit hc: HeaderCarrier): Future[Boolean] = Future.successful(true)
+    override def getRelativeOrAbsoluteWhiteListed(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
+      Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue)))
+    }
   }
 
   object failingValidator extends ContinueUrlValidator(whiteListService) {
-    override def isRelativeOrAbsoluteWhiteListed(continueUrl: ContinueUrl)(implicit hc: HeaderCarrier): Future[Boolean] = Future.successful(false)
+    override def getRelativeOrAbsoluteWhiteListed(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
+      Future.successful(None)
+    }
   }
 
   "SandboxController" should {
     "Return a 200 and the correct JSON for a GET" in {
-      val continueUrl = mock[ContinueUrl]
-      val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
+      val continueUrl = RedirectUrl("/a")
+      val messagesControllerComponents: MessagesControllerComponents = inject[MessagesControllerComponents]
 
-      val controller = new SandboxController(succeedingValidator, messagesControllerComponents)
+      val controller = new SandboxController(succeedingValidator, messagesControllerComponents)(ExecutionContext.global)
       val result = controller.create(continueUrl)(FakeRequest())
 
       status(result) shouldBe OK
@@ -54,10 +56,9 @@ class SandboxControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppP
     }
 
     "Redirect if the ContinueURL is not valid" in {
-      val continueUrl = mock[ContinueUrl]
-      val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf(classOf[MessagesControllerComponents])
-      val controller = new SandboxController(failingValidator, messagesControllerComponents)
-      val result = controller.create(continueUrl)(FakeRequest())
+      val messagesControllerComponents: MessagesControllerComponents = inject[MessagesControllerComponents]
+      val controller = new SandboxController(failingValidator, messagesControllerComponents)(ExecutionContext.global)
+      val result = controller.create(RedirectUrl("/a"))(FakeRequest())
 
       status(result) shouldBe BAD_REQUEST
       contentAsString(result) shouldBe "Invalid Continue URL"

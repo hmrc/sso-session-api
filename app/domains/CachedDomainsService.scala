@@ -16,35 +16,36 @@
 
 package domains
 
-import javax.inject.{Inject, Singleton}
-
 import connectors.SsoDomainsConnector
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
-import play.api.cache.CacheApi
+import play.api.cache.AsyncCacheApi
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration, SECONDS}
 
 @Singleton
-class CachedDomainsService @Inject() (ssoDomainsConnector: SsoDomainsConnector, cache: CacheApi) {
+class CachedDomainsService @Inject() (
+    ssoDomainsConnector: SsoDomainsConnector,
+    cache:               AsyncCacheApi
+)(implicit val ec: ExecutionContext) {
 
   private val CacheKey = "sso/domains"
 
   def getDomains()(implicit hc: HeaderCarrier): Future[Option[DomainsResponse]] = {
-    cache.get[DomainsResponse](CacheKey).map { cachedDomainsResponse =>
-      Future.successful(Some(cachedDomainsResponse))
-    }.getOrElse {
-      ssoDomainsConnector.getDomains.map { domainsResponse =>
-        cache.set(CacheKey, domainsResponse, Duration(domainsResponse.maxAge, SECONDS))
-        Some(domainsResponse)
-      }.recover{
-        case e: Exception =>
-          Logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
-          None
-      }
+    cache.get[DomainsResponse](CacheKey).flatMap {
+      case Some(cachedDomainsResponse) =>
+        Future.successful(Some(cachedDomainsResponse))
+      case None =>
+        ssoDomainsConnector.getDomains.map { domainsResponse =>
+          cache.set(CacheKey, domainsResponse, Duration(domainsResponse.maxAge, SECONDS))
+          Some(domainsResponse)
+        }.recover {
+          case _: Exception =>
+            Logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
+            None
+        }
     }
   }
-
 }

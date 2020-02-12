@@ -17,20 +17,21 @@
 package domains
 
 import javax.inject.{Inject, Singleton}
-
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.binders.ContinueUrl
+import uk.gov.hmrc.play.bootstrap.binders.{OnlyRelative, RedirectUrl, SafeRedirectUrl}
+import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl._
 
 import scala.concurrent.Future
 
 @Singleton
 class ContinueUrlValidator @Inject() (whiteListService: WhiteListService) {
 
-  def isRelativeOrAbsoluteWhiteListed(continueUrl: ContinueUrl)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    if (!continueUrl.isRelativeUrl)
-      whiteListService.isAbsoluteUrlWhiteListed(continueUrl)
-    else
-      Future.successful(true)
-
+  def getRelativeOrAbsoluteWhiteListed(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
+    continueUrl.getEither(OnlyRelative) match {
+      case Left(_) =>
+        whiteListService.getWhitelistedAbsoluteUrl(continueUrl)
+      case Right(safe) =>
+        Future.successful(Some(safe))
+    }
   }
 }

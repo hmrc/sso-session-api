@@ -24,21 +24,17 @@ import javax.inject.{Inject, Singleton}
 import play.api.http.HeaderNames
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SsoDomainsConnector @Inject() (http: HttpClient, appConfig: AppConfig) {
+class SsoDomainsConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   private val DefaultTTL = 60
   private val MaxAgeHeaderPattern = "max-age=(\\d+)".r
 
-  implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = MdcLoggingExecutionContext.fromLoggingDetails(loggingDetails)
-  def serviceUrl = new URL(appConfig.ssoUrl)
+  private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
   implicit val whiteListedDomainsFormat: OFormat[WhiteListedDomains] = Json.format[WhiteListedDomains]
 

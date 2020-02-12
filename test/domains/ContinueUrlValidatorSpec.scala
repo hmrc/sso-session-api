@@ -19,56 +19,39 @@ package domains
 import org.scalatest.concurrent.ScalaFutures
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.binders._
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class ContinueUrlValidatorSpec extends UnitSpec with ScalaFutures {
 
   trait Setup {
-    val whiteListServiceMock: WhiteListService = mock[WhiteListService]
-    val continueUrlValidator = new ContinueUrlValidator(whiteListServiceMock)
+    val mockWhitelistService: WhiteListService = mock[WhiteListService]
+    val continueUrlValidator = new ContinueUrlValidator(mockWhitelistService)
     implicit val hc: HeaderCarrier = HeaderCarrier()
   }
 
-  "isRelativeOrAbsoluteWhiteListed" should {
-    "return true if continueUrl is relative" in new Setup {
-      await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(ContinueUrl("/relative"))) shouldBe true
-      verifyZeroInteractions(whiteListServiceMock)
+  "getRelativeOrAbsoluteWhiteListed" should {
+    "return a SafeRedirectUrl if continueUrl is relative" in new Setup {
+      await(continueUrlValidator.getRelativeOrAbsoluteWhiteListed(RedirectUrl("/relative"))) shouldBe Some(SafeRedirectUrl("/relative"))
+
+      verifyZeroInteractions(mockWhitelistService)
     }
 
-    "return true if continueUrl is absolute whitelisted" in new Setup {
-      val url = ContinueUrl("http://absolute/whitelisted")
-      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(eqTo(url), *)(*)).thenReturn(Future(true))
-      await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(url)) shouldBe true
+    "return a SafeRedirectUrl if continueUrl is absolute whitelisted" in new Setup {
+      val url = RedirectUrl("http://absolute/whitelisted")
+      when(mockWhitelistService.getWhitelistedAbsoluteUrl(eqTo(url))(*))
+        .thenReturn(Future.successful(Some(SafeRedirectUrl("http://absolute/whitelisted"))))
+
+      await(continueUrlValidator.getRelativeOrAbsoluteWhiteListed(url)) shouldBe Some(SafeRedirectUrl("http://absolute/whitelisted"))
     }
 
-    "return false if continueUrl is not relative or absolute whitelisted" in new Setup {
-      val url = ContinueUrl("http://not-relative-or-absolute-whitelisted")
-      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(eqTo(url), *)(*)).thenReturn(Future(false))
-      await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(url)) shouldBe false
+    "return None if continueUrl is not relative or absolute whitelisted" in new Setup {
+      val url = RedirectUrl("http://not-relative-or-absolute-whitelisted")
+      when(mockWhitelistService.getWhitelistedAbsoluteUrl(eqTo(url))(*))
+        .thenReturn(Future.successful(None))
+
+      await(continueUrlValidator.getRelativeOrAbsoluteWhiteListed(url)) shouldBe None
     }
-
-  }
-
-  "isRelativeOrInternal" should {
-    "return true if continueUrl is relative" in new Setup {
-      await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(ContinueUrl("/relative"))) shouldBe true
-      verifyZeroInteractions(whiteListServiceMock)
-    }
-
-    "return true if continueUrl is internal" in new Setup {
-      val url = ContinueUrl("http://absolute/whitelisted")
-      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(eqTo(url), *)(*)).thenReturn(Future(true))
-      await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(url)) shouldBe true
-    }
-
-    "return false if continueUrl is not relative or internal" in new Setup {
-      val url = ContinueUrl("http://not-relative-or-absolute-whitelisted")
-      when(whiteListServiceMock.isAbsoluteUrlWhiteListed(eqTo(url), *)(*)).thenReturn(Future(false))
-      await(continueUrlValidator.isRelativeOrAbsoluteWhiteListed(url)) shouldBe false
-    }
-
   }
 }

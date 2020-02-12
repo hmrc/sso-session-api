@@ -19,28 +19,20 @@ package connectors
 import java.net.URL
 
 import config.AppConfig
-import org.scalatest.concurrent.ScalaFutures
-import play.api.cache.CacheApi
-import play.api.libs.json.{JsValue, Json}
-import play.api.test.FakeRequest
+import play.api.cache.AsyncCacheApi
+import play.api.libs.json.Json
 import play.mvc.Http.HeaderNames
 import uk.gov.hmrc.gg.test.UnitSpec
-import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import websession.ApiToken
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class SsoConnectorSpec extends UnitSpec with ScalaFutures with ApiJsonFormats {
+class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
 
   trait Setup {
-
-    implicit val hc = mock[HeaderCarrier]
-    implicit val ec = scala.concurrent.ExecutionContext.global
-    implicit val request = FakeRequest()
-
-    val cache = mock[CacheApi]
+    val cache = mock[AsyncCacheApi]
 
     val affordanceUri = "/affordance-uri"
     val http = mock[HttpClient]
@@ -49,97 +41,87 @@ class SsoConnectorSpec extends UnitSpec with ScalaFutures with ApiJsonFormats {
     val ssnInfo = SsoInSessionInfo("bearerToken", "sessionID", "userID")
     val mockAppConfig = mock[AppConfig]
 
-    class TestSsoConnector extends SsoConnector(cache, http, mockAppConfig) {
-      override implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = scala.concurrent.ExecutionContext.global
-    }
-
-    val ssoConnector = new TestSsoConnector()
-
+    val ssoConnector = new SsoConnector(cache, http, mockAppConfig)(ExecutionContext.global)
   }
 
   "SsoConnector" should {
 
     "return affordance URI using given json reader" in new Setup {
 
-      when(cache.get[HttpResponse](any)(any)).thenReturn(None)
+      when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
 
       when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
         HttpResponse(
           200,
-          Option[JsValue](Json.parse("{\"api-tokens\":\"http://mock-create-token-url\"}")),
-          Map[String, Seq[String]](),
-          Option[String]("response string")
+          Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+          Map.empty,
+          Some("response string")
         )
       ))
-      val affordanceURL = ssoConnector.getRootAffordance(jsValue => affordanceUri)
-      whenReady(affordanceURL) { url => url shouldBe new URL(serviceBaseURL + "/affordance-uri") }
+
+      val url = await(ssoConnector.getRootAffordance(_ => affordanceUri)(HeaderCarrier()))
+      url shouldBe new URL(serviceBaseURL + "/affordance-uri")
     }
 
     "on calling createToken, POST request to sso createTokensURL, return url constructed from the response LOCATION header" in new Setup {
-      when(cache.get[HttpResponse](any)(any)).thenReturn(None)
+      when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
 
       when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
         HttpResponse(
           200,
-          Option[JsValue](Json.parse("{\"api-tokens\":\"http://mock-create-token-url\"}")),
-          Map[String, Seq[String]](),
-          Option[String]("response string")
+          Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+          Map.empty,
+          Some("response string")
         )
       ))
 
       when(http.POST[ApiToken, HttpResponse](any, any, any)(any, any, any, any)).thenReturn(
         Future.successful(HttpResponse(
           200,
-          Option[JsValue](Json.parse("{\"api-tokens\":\"http://mock-create-token-url\"}")),
-          Map[String, Seq[String]](HeaderNames.LOCATION -> Seq("http://mock-create-token-response-url")),
-          Option[String]("")
+          Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+          Map(HeaderNames.LOCATION -> Seq("http://mock-create-token-response-url")),
+          Some("")
         ))
       )
-      val futureUrl = ssoConnector.createToken(token)
+      val futureUrl = ssoConnector.createToken(token)(HeaderCarrier())
       await(futureUrl) shouldBe new URL("http://mock-create-token-response-url")
 
     }
 
     "on calling createToken, POST request to sso createTokensURL, throw exception when no url in response LOCATION header" in new Setup {
-      when(cache.get[HttpResponse](any)(any)).thenReturn(None)
+      when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
 
-      when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful((HttpResponse(
+      when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(HttpResponse(
         200,
-        Option[JsValue](Json.parse("{\"api-tokens\":\"http://mock-create-token-url\"}")),
-        Map[String, Seq[String]](),
-        Option[String]("response string")
-      ))
-      ))
+        Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+        Map.empty,
+        Some("response string")
+      )))
 
       when(http.POST[ApiToken, HttpResponse](any, any, any)(any, any, any, any)).thenReturn(
         Future.successful(HttpResponse(
           200,
-          Option[JsValue](Json.parse("{\"api-tokens\":\"http://mock-create-token-url\"}")),
-          Map[String, Seq[String]](),
-          Option[String]("")
+          Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+          Map.empty,
+          Some("")
         ))
       )
 
-      val futureUrl = ssoConnector.createToken(token)
-      futureUrl onFailure {
-        case t => t.isInstanceOf[RuntimeException] shouldBe true
+      a[RuntimeException] shouldBe thrownBy {
+        await(ssoConnector.createToken(token)(HeaderCarrier()))
       }
-      futureUrl.onSuccess({
-        case value => fail("Should throw RuntimeException")
-      })
-
     }
 
     "on calling getTokenDetails, makes GET request to given url to obtain ApiToken" in new Setup {
       val mockUrlString = "http://mock-token-detail-request-url"
-      when(http.GET[ApiToken](matches(mockUrlString))(any, any, any)).thenReturn(Future.successful(
+      when(http.GET[ApiToken](eqTo(mockUrlString))(any, any, any)).thenReturn(Future.successful(
         token
       ))
-      val fApiToken = ssoConnector.getTokenDetails(new URL(mockUrlString))
-      whenReady(fApiToken) { token => token shouldEqual token }
+      val apiToken = await(ssoConnector.getTokenDetails(new URL(mockUrlString))(HeaderCarrier()))
+      apiToken shouldBe token
     }
   }
 }

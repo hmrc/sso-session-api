@@ -16,43 +16,29 @@
 
 package domains
 
-import java.net.URL
-import javax.inject.{Inject, Singleton}
-
 import connectors.SsoConnector
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.binders.ContinueUrl
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl._
+import uk.gov.hmrc.play.bootstrap.binders.{AbsoluteWithHostnameFromWhitelist, RedirectUrl, SafeRedirectUrl}
 
-import scala.concurrent.Future
-import scala.util.Try
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class WhiteListService @Inject() (cachedDomainService: CachedDomainsService, ssoConnector: SsoConnector) {
+class WhiteListService @Inject() (
+    cachedDomainService: CachedDomainsService,
+    ssoConnector:        SsoConnector
+)(implicit val ec: ExecutionContext) {
 
-  def hasExternalDomain(continueUrl: ContinueUrl)(implicit hc: HeaderCarrier): Future[Boolean] = isAbsoluteUrlWhiteListed(continueUrl, _.externalDomains)
+  def getWhitelistedAbsoluteUrl(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
+    cachedDomainService.getDomains.map {
+      case Some(validDomains) =>
+        continueUrl.getEither(AbsoluteWithHostnameFromWhitelist(validDomains.allDomains)).toOption
 
-  def hasInternalDomain(continueUrl: ContinueUrl)(implicit hc: HeaderCarrier): Future[Boolean] = isAbsoluteUrlWhiteListed(continueUrl, _.internalDomains)
-
-  def isAbsoluteUrlWhiteListed(continueUrl: ContinueUrl, f: DomainsResponse => Set[String] = _.allDomains)(implicit hc: HeaderCarrier): Future[Boolean] = {
-
-      def isValidURL(url: String) = Try(new URL(url)).isSuccess
-
-    if (continueUrl.isAbsoluteUrl && isValidURL(continueUrl.url)) {
-      cachedDomainService.getDomains.map { validDomainsOption =>
-        validDomainsOption.map { validDomains =>
-          val host = new URL(continueUrl.url).getHost
-          f(validDomains).contains(host)
-        }.getOrElse {
-          Logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
-          false
-        }
-      }
-
-    } else {
-      Future.successful(false)
+      case None =>
+        Logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
+        None
     }
   }
-
 }

@@ -22,31 +22,19 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.gg.test.UnitSpec
-import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
 
   trait Setup {
-
-    implicit val hc = mock[HeaderCarrier]
-    implicit val ec = scala.concurrent.ExecutionContext.global
-
     val mockHttp = mock[HttpClient]
     val serviceBaseURL = "http://mockbaseurl:1234"
     val mockAppConfig = mock[AppConfig]
 
-    //so we can mock dependencies pulled in via other traits by overriding them
-    class TestSsoDomainsConnector extends SsoDomainsConnector(mockHttp, mockAppConfig) {
-      override implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = scala.concurrent.ExecutionContext.global
-    }
-
-    val ssoDomainsConnector = new TestSsoDomainsConnector()
-
+    val ssoDomainsConnector = new SsoDomainsConnector(mockHttp, mockAppConfig)(ExecutionContext.global)
   }
 
   "SsoDomainsConnector" should {
@@ -59,13 +47,14 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
         HttpResponse(
           200,
           Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains)),
-          Map[String, Seq[String]](HeaderNames.CACHE_CONTROL -> Seq("max-age=33")),
+          Map(HeaderNames.CACHE_CONTROL -> Seq("max-age=33")),
           Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains).toString())
         )
       ))
 
-      val fDomains = ssoDomainsConnector.getDomains()
-      whenReady(fDomains) {
+      val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
+
+      domains match {
         case DomainsResponse(WhiteListedDomains(extDomains, intDomains), maxAge) => {
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
@@ -83,13 +72,14 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
         HttpResponse(
           200,
           Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains)),
-          Map[String, Seq[String]](),
+          Map.empty,
           Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains).toString())
         )
       ))
 
-      val fDomains = ssoDomainsConnector.getDomains()
-      whenReady(fDomains) {
+      val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
+
+      domains match {
         case DomainsResponse(WhiteListedDomains(extDomains, intDomains), maxAge) => {
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")

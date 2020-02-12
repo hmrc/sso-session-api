@@ -21,9 +21,9 @@ import domains.{CachedDomainsService, DomainsResponse, WhiteListService, WhiteLi
 import org.scalatest.concurrent.ScalaFutures
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.binders.ContinueUrl
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class WhiteListServiceSpec extends UnitSpec with ScalaFutures {
 
@@ -35,35 +35,37 @@ class WhiteListServiceSpec extends UnitSpec with ScalaFutures {
       internalDomains = Set("www.validinternal.gov.uk")), 60
     )
 
-    val cachedDomainsService = mock[CachedDomainsService]
-    val ssoConnectorMock = mock[SsoConnector]
-    val whiteListService = new WhiteListService(cachedDomainsService, ssoConnectorMock)
+    val mockCachedDomainsService = mock[CachedDomainsService]
+    val mockSsoConnector = mock[SsoConnector]
+    val whiteListService = new WhiteListService(mockCachedDomainsService, mockSsoConnector)(ExecutionContext.global)
   }
 
   "white list service" should {
 
     "return true for continueUrl with a valid internal hostname" in new Setup {
-      when(cachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
-      whiteListService.isAbsoluteUrlWhiteListed(ContinueUrl("https://www.validinternal.gov.uk")).futureValue shouldBe true
+      when(mockCachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
+      await(whiteListService.getWhitelistedAbsoluteUrl(RedirectUrl("https://www.validinternal.gov.uk"))) shouldBe Some(SafeRedirectUrl("https://www.validinternal.gov.uk"))
     }
 
     "return true for continueUrl with a valid external hostname" in new Setup {
-      when(cachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
-      whiteListService.isAbsoluteUrlWhiteListed(ContinueUrl("https://www.validexternal.com")).futureValue shouldBe true
+      when(mockCachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
+      await(whiteListService.getWhitelistedAbsoluteUrl(RedirectUrl("https://www.validexternal.com"))) shouldBe Some(SafeRedirectUrl("https://www.validexternal.com"))
     }
 
     "return false for continueUrl with hostname which is not a valid internal or external domain" in new Setup {
-      when(cachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
-      whiteListService.isAbsoluteUrlWhiteListed(ContinueUrl("https://www.phishing.com")).futureValue shouldBe false
+      when(mockCachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
+      await(whiteListService.getWhitelistedAbsoluteUrl(RedirectUrl("https://www.phishing.com"))) shouldBe None
     }
 
     "return false is the list of valid domains is unavailable" in new Setup {
-      when(cachedDomainsService.getDomains).thenReturn(Future.successful(None))
-      whiteListService.isAbsoluteUrlWhiteListed(ContinueUrl("https://www.validexternal.com")).futureValue shouldBe false
+      when(mockCachedDomainsService.getDomains).thenReturn(Future.successful(None))
+      await(whiteListService.getWhitelistedAbsoluteUrl(RedirectUrl("https://www.validexternal.com"))) shouldBe None
     }
 
     "return false for relative urls" in new Setup {
-      whiteListService.isAbsoluteUrlWhiteListed(ContinueUrl("/relative-urls-cant-be-whitelisted-by-host")).futureValue shouldBe false
+      when(mockCachedDomainsService.getDomains()(any))
+        .thenReturn(Future.successful(Some(DomainsResponse(WhiteListedDomains(Set.empty, Set.empty), 60))))
+      await(whiteListService.getWhitelistedAbsoluteUrl(RedirectUrl("/relative-urls-cant-be-whitelisted-by-host"))) shouldBe None
     }
 
   }

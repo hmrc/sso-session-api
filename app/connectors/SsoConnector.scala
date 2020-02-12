@@ -21,25 +21,27 @@ import java.net.URL
 import com.google.inject.Inject
 import config.AppConfig
 import javax.inject.Singleton
-import play.api.cache.CacheApi
+import play.api.cache.AsyncCacheApi
 import play.api.http.HeaderNames
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging.LoggingDetails
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext
 import websession._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SsoConnector @Inject() (override val cache: CacheApi, val http: HttpClient, appConfig: AppConfig) extends ApiJsonFormats with PlayCache {
+class SsoConnector @Inject() (
+    val cache: AsyncCacheApi,
+    val http:  HttpClient,
+    appConfig: AppConfig
+)(implicit val ec: ExecutionContext)
+  extends ApiJsonFormats
+  with PlayCache {
 
-  implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext = MdcLoggingExecutionContext.fromLoggingDetails(loggingDetails)
   def serviceUrl = new URL(appConfig.ssoUrl)
 
   def getRootAffordance(reader: JsValue => String)(implicit hc: HeaderCarrier): Future[URL] = {
@@ -83,25 +85,26 @@ trait PlayCache {
 
   def http: HttpGet
 
-  def cache: CacheApi
+  def cache: AsyncCacheApi
 
-  implicit def getExecutionContext(implicit loggingDetails: LoggingDetails): ExecutionContext
+  implicit val ec: ExecutionContext
 
   private val cacheControlPattern = "max-age=(\\d+)".r
 
   def withCache(url: URL)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val urlAsString = url.toString
-    val resp = cache.get[HttpResponse](urlAsString).fold {
-      val eventualResponse = http.GET[HttpResponse](urlAsString)
-      eventualResponse.onSuccess {
-        case response =>
+
+    cache.get[HttpResponse](urlAsString).flatMap {
+      case Some(cachedValue) =>
+        Future.successful(cachedValue)
+      case None =>
+        http.GET[HttpResponse](urlAsString).flatMap { response =>
           response.header(HeaderNames.CACHE_CONTROL).collect {
-            case cacheControlPattern(seconds) => cache.set(urlAsString, response, seconds.toLong.seconds)
-          }
-      }
-      eventualResponse
-    }(Future.successful)
-    resp
+            case cacheControlPattern(seconds) =>
+              cache.set(urlAsString, response, seconds.toLong.seconds).map(_ => response)
+          }.getOrElse(Future.successful(response))
+        }
+    }
   }
 }
 

@@ -18,8 +18,6 @@ package websession
 
 import java.net.URL
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import auth.{AuthResponse, FrontendAuthConnector}
 import config._
 import connectors.SsoConnector
@@ -32,25 +30,22 @@ import play.api.mvc.MessagesControllerComponents
 import play.api.test.FakeRequest
 import uk.gov.hmrc.crypto._
 import uk.gov.hmrc.gg.test.UnitSpec
-import uk.gov.hmrc.http.{HeaderNames => HmrcHeaderNames, _}
+import uk.gov.hmrc.http.{HeaderNames => HmrcHeaderNames}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.play.binders.ContinueUrl
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 import websession.create.ApiTokenController
-import play.api.test.Helpers._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
   trait Setup {
     val ssoFeHost = "ssoFeHost"
-    val continueUrl = ContinueUrl("/somewhere")
+    val continueUrl = RedirectUrl("/somewhere")
     val absoluteUrlPath = "http://domain:1234/somewhere"
-    private val correctTokenId = new URL("http://sso.service/tokenId/1234")
-    private val missingTokenId = new URL("http://sso.service/tokenId/2345")
     private val encryptedCorrectTokenId = "encryptedTokenId"
     val encodedCorrectToken = Base64.encodeBase64String(encryptedCorrectTokenId.getBytes("UTF-8"))
     private val encryptedMissingTokenId = "encryptedMissingTokenId"
@@ -86,17 +81,14 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
   "create" should {
 
-    implicit lazy val system = ActorSystem("jsonBodyMaterialing")
-    implicit val materializer = ActorMaterializer()
-
     "respond with 200 and encrypted token in message" in new Setup {
-      when(mockContinueUrlValidator.isRelativeOrAbsoluteWhiteListed(any[ContinueUrl])(any[HeaderCarrier])).thenReturn(Future.successful(true))
+      when(mockContinueUrlValidator.getRelativeOrAbsoluteWhiteListed(any)(any)).thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
       when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
 
       val tokenUrl = new URL("http://sso.service/tokenId/1234")
       when(mockAuthConnector.getAuthUri()(any, any)).thenReturn(Future.successful(Some(AuthResponse("testing"))))
 
-      when(mockSsoConnector.createToken(any[ApiToken])(any[HeaderCarrier])).thenReturn(Future.successful(tokenUrl))
+      when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
 
       val cryptedTokenUrl = mock[Crypted]
       when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
@@ -110,8 +102,8 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       sessionLink shouldBe (ssoFeHost + s"/sso/session?token=$encodedCorrectToken")
 
       val auditEventCaptor: ArgumentCaptor[DataEvent] = ArgumentCaptor.forClass(classOf[DataEvent])
-      verify(mockAuditConnector).sendEvent(auditEventCaptor.capture())(any[HeaderCarrier], any[ExecutionContext])
-      auditEventCaptor.getAllValues.asScala.exists(e => e.auditType == "api-sso-token-created" && e.detail.get("continueUrl").contains(continueUrl.url)) shouldBe true
+      verify(mockAuditConnector).sendEvent(auditEventCaptor.capture())(any, any[ExecutionContext])
+      auditEventCaptor.getAllValues.asScala.exists(e => e.auditType == "api-sso-token-created" && e.detail.get("continueUrl").contains(continueUrl.unsafeValue)) shouldBe true
     }
 
     "respond with 401 if the user is not logged in" in new Setup {
@@ -123,12 +115,12 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
     "respond with 200 if no session-id provided" in new Setup {
       when(mockAuthConnector.getAuthUri()(any, any)).thenReturn(Future.successful(Some(AuthResponse("testing"))))
-      when(mockContinueUrlValidator.isRelativeOrAbsoluteWhiteListed(any[ContinueUrl])(any[HeaderCarrier])).thenReturn(Future.successful(true))
+      when(mockContinueUrlValidator.getRelativeOrAbsoluteWhiteListed(any)(any)).thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
       when(mockAuditConnector.sendEvent(any)(any, any)).thenReturn(Future.successful(AuditResult.Success))
       when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
 
       val tokenUrl = new URL("http://sso.service/tokenId/1234")
-      when(mockSsoConnector.createToken(any[ApiToken])(any[HeaderCarrier])).thenReturn(Future.successful(tokenUrl))
+      when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
 
       val cryptedTokenUrl = mock[Crypted]
       when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
