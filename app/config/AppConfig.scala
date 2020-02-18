@@ -16,8 +16,6 @@
 
 package config
 
-import java.net.URL
-
 import javax.inject.Inject
 import play.api.Configuration
 import uk.gov.hmrc.crypto.{Crypted, CryptoGCMWithKeysFromConfig, Decrypter, Encrypter, PlainBytes, PlainContent, PlainText}

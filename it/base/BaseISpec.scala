@@ -8,7 +8,7 @@ import play.api.libs.ws.WSResponse
 import play.api.mvc.Session
 import uk.gov.hmrc.crypto.{ApplicationCrypto, Crypted, PlainText}
 import uk.gov.hmrc.gg.test.it.SmIntegrationSpecBase
-import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames, SessionKeys}
+import uk.gov.hmrc.http.{HeaderNames, SessionKeys}
 import uk.gov.hmrc.play.it.SessionCookieEncryptionSupport
 
 
@@ -17,8 +17,6 @@ trait BaseISpec extends SmIntegrationSpecBase with SessionCookieEncryptionSuppor
   override protected def extraConfig = Map(
     "Test.microservice.services.service-locator.enabled" -> false
   )
-
-  implicit val hc = HeaderCarrier()
 
   def getAuthResource(path: String) = getExternalResourceUrl("auth", path)
   def getSsoResource(path: String) = getExternalResourceUrl("sso", path)
@@ -45,12 +43,11 @@ trait BaseISpec extends SmIntegrationSpecBase with SessionCookieEncryptionSuppor
     (authToken,authUri)
   }
 
-
   def createApiToken(continueUrl: String, authToken: String, sessionId: String = UUID.randomUUID().toString): WSResponse = {
     await(resourceRequest("/web-session")
-      .withQueryString(("continueUrl", continueUrl))
+      .withQueryStringParameters(("continueUrl", continueUrl))
       .withFollowRedirects(false)
-      .withHeaders(HeaderNames.authorisation -> authToken, HeaderNames.xSessionId -> sessionId)
+      .withHttpHeaders(HeaderNames.authorisation -> authToken, HeaderNames.xSessionId -> sessionId)
       .get())
   }
 
@@ -58,14 +55,14 @@ trait BaseISpec extends SmIntegrationSpecBase with SessionCookieEncryptionSuppor
     await(wsClient.url(fullRedeemUrl).withSession(SessionKeys.lastRequestTimestamp -> System.currentTimeMillis.toString).withFollowRedirects(false).get())
   }
 
-  val config = app.injector.instanceOf(classOf[Configuration])
+  val config = app.injector.instanceOf[Configuration]
 
   def decryptCookie(mdtpSessionCookieValue: String): Map[String, String] = {
     val applicationCrypto = new ApplicationCrypto(config.underlying)
 
     applicationCrypto.SessionCookieCrypto.decrypt(Crypted(mdtpSessionCookieValue)) match {
       case PlainText(v) => Session.decode(v)
-      case _ => Map.empty[String, String]
+      case _ => Map.empty
     }
   }
 }

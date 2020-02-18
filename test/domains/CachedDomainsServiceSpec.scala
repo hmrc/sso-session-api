@@ -14,86 +14,74 @@
  * limitations under the License.
  */
 
-package service
+package domains
 
 import connectors.SsoDomainsConnector
-import domains.{CachedDomainsService, DomainsResponse, WhiteListedDomains}
-import org.scalatest.concurrent.ScalaFutures
-import play.api.cache.CacheApi
+import play.api.cache.AsyncCacheApi
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.Future
 import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.{ExecutionContext, Future}
 
-class CachedDomainsServiceSpec extends UnitSpec with ScalaFutures {
+class CachedDomainsServiceSpec extends UnitSpec {
 
   trait Setup {
-    implicit val hc = HeaderCarrier()
+    val mockSsoDomainsConnector = mock[SsoDomainsConnector]
+    val mockCache = mock[AsyncCacheApi]
 
-    val ssoDomainsConnectorMock = mock[SsoDomainsConnector]
-    val cacheMock = mock[CacheApi]
-
-    val domainsFromRealSSO = mock[DomainsResponse]
+    val domainsFromRealSSO = DomainsResponse(WhiteListedDomains(Set.empty, Set.empty), 123)
     val ssoResponseWithSuggestedTTL = (domainsFromRealSSO, Some("max-age=123"))
     val ssoResponseWithNoTTL = (domainsFromRealSSO, None)
     val cachedDomains = DomainsResponse(WhiteListedDomains(Set.empty, Set.empty), 0)
 
-    val cachedDomainsService = new CachedDomainsService(ssoDomainsConnectorMock, cacheMock)
+    val cachedDomainsService = new CachedDomainsService(mockSsoDomainsConnector, mockCache)(ExecutionContext.global)
   }
 
   "white list service" should {
 
-    "delegate to the real connector which the cache misses" in new Setup {
-      when(cacheMock.get[DomainsResponse]("sso/domains")).thenReturn(None)
-      when(cacheMock.set(eqTo("sso/domains"), any, any)).isLenient()
-      when(ssoDomainsConnectorMock.getDomains()(any[HeaderCarrier])).thenReturn(Future.successful(domainsFromRealSSO))
-      when(domainsFromRealSSO.maxAge).thenReturn(123)
-      cachedDomainsService.getDomains().futureValue shouldBe Some(domainsFromRealSSO)
+    "delegate to the real connector when the cache misses" in new Setup {
+      when(mockCache.get[DomainsResponse]("sso/domains")).thenReturn(Future.successful(None))
+      when(mockCache.set(eqTo("sso/domains"), any, any)).isLenient()
+      when(mockSsoDomainsConnector.getDomains()(any)).thenReturn(Future.successful(domainsFromRealSSO))
+
+      await(cachedDomainsService.getDomains()(HeaderCarrier())) shouldBe Some(domainsFromRealSSO)
     }
 
     "return the cached value if the cache is populated" in new Setup {
-      when(cacheMock.get[DomainsResponse]("sso/domains")).thenReturn(Some(cachedDomains))
-      when(cacheMock.set(eqTo("sso/domains"), any, any)).isLenient()
-      cachedDomainsService.getDomains().futureValue shouldBe Some(cachedDomains)
-      verifyZeroInteractions(ssoDomainsConnectorMock)
+      when(mockCache.get[DomainsResponse]("sso/domains")).thenReturn(Future.successful(Some(cachedDomains)))
+      when(mockCache.set(eqTo("sso/domains"), any, any)).isLenient()
+
+      await(cachedDomainsService.getDomains()(HeaderCarrier())) shouldBe Some(cachedDomains)
+      verifyZeroInteractions(mockSsoDomainsConnector)
     }
 
     "populate the cache when a call to the real connector succeeds" in new Setup {
-      when(cacheMock.get[DomainsResponse]("sso/domains")).thenReturn(None)
-      when(ssoDomainsConnectorMock.getDomains()(any[HeaderCarrier])).thenReturn(Future.successful(domainsFromRealSSO))
-      when(domainsFromRealSSO.maxAge).thenReturn(123)
-      cachedDomainsService.getDomains().futureValue
+      when(mockCache.get[DomainsResponse]("sso/domains")).thenReturn(Future.successful(None))
+      when(mockSsoDomainsConnector.getDomains()(any)).thenReturn(Future.successful(domainsFromRealSSO))
 
-      verify(cacheMock).set("sso/domains", domainsFromRealSSO, Duration(123, SECONDS))
+      await(cachedDomainsService.getDomains()(HeaderCarrier()))
+
+      verify(mockCache).set("sso/domains", domainsFromRealSSO, Duration(123, SECONDS))
     }
 
     "The cache ttl should be suggested by the sso connector" in new Setup {
-      when(cacheMock.get[DomainsResponse]("sso/domains")).thenReturn(None)
-      when(ssoDomainsConnectorMock.getDomains()(any[HeaderCarrier])).thenReturn(Future.successful(domainsFromRealSSO))
-      when(domainsFromRealSSO.maxAge).thenReturn(123)
-      cachedDomainsService.getDomains().futureValue
+      when(mockCache.get[DomainsResponse]("sso/domains")).thenReturn(Future.successful(None))
+      when(mockSsoDomainsConnector.getDomains()(any)).thenReturn(Future.successful(domainsFromRealSSO))
 
-      verify(cacheMock).set("sso/domains", domainsFromRealSSO, Duration(123, SECONDS))
-    }
+      await(cachedDomainsService.getDomains()(HeaderCarrier()))
 
-    "use a sensible default ttl if not suggested by the sso connector" in new Setup {
-      when(cacheMock.get[DomainsResponse]("sso/domains")).thenReturn(None)
-      when(ssoDomainsConnectorMock.getDomains()(any[HeaderCarrier])).thenReturn(Future.successful(domainsFromRealSSO))
-      when(domainsFromRealSSO.maxAge).thenReturn(60)
-      cachedDomainsService.getDomains().futureValue
-
-      verify(cacheMock).set("sso/domains", domainsFromRealSSO, Duration(60, SECONDS))
+      verify(mockCache).set("sso/domains", domainsFromRealSSO, Duration(123, SECONDS))
     }
 
     "do not cache failed calls the end point as we do not want temporary call failures to become long lasting failures" in new Setup {
-      when(cacheMock.get[DomainsResponse]("sso/domains")).thenReturn(None)
-      when(ssoDomainsConnectorMock.getDomains()(any[HeaderCarrier])).thenReturn(Future.failed(new Exception("")))
+      when(mockCache.get[DomainsResponse]("sso/domains")).thenReturn(Future.successful(None))
+      when(mockSsoDomainsConnector.getDomains()(any)).thenReturn(Future.failed(new Exception("")))
 
-      cachedDomainsService.getDomains().futureValue
+      await(cachedDomainsService.getDomains()(HeaderCarrier()))
 
-      verify(cacheMock).get[DomainsResponse]("sso/domains")
-      verifyNoMoreInteractions(cacheMock)
+      verify(mockCache).get[DomainsResponse]("sso/domains")
+      verifyNoMoreInteractions(mockCache)
     }
 
   }

@@ -19,39 +19,40 @@ package websession.create
 import java.net.URL
 import java.util.UUID
 
-import javax.inject.{Inject, Singleton}
 import audit.AuditEvent
 import auth.FrontendAuthConnector
+import config._
 import connectors.SsoConnector
+import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
+import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.api.libs.json.Json.JsValueWrapper
-import play.api.mvc.{Action, AnyContent, ControllerComponents, MessagesControllerComponents, Result}
-import config._
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.crypto.PlainText
-import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
 import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, Upstream4xxResponse}
 import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.binders.ContinueUrl
-import uk.gov.hmrc.play.bootstrap.controller.{BackendController, FrontendController}
+import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
+import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 import websession.ApiToken
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ApiTokenController @Inject() (val ssoConnector:         SsoConnector,
-                                    val authConnector:        FrontendAuthConnector,
-                                    val auditConnector:       AuditConnector,
-                                    val frontendAppConfig:    AppConfig,
-                                    val continueUrlValidator: ContinueUrlValidator,
-                                    controllerComponents:     MessagesControllerComponents)(implicit executionContext: ExecutionContext) extends FrontendController(controllerComponents) with WhitelistedContinueUrl {
+class ApiTokenController @Inject() (
+    val ssoConnector:         SsoConnector,
+    val authConnector:        FrontendAuthConnector,
+    val auditConnector:       AuditConnector,
+    val frontendAppConfig:    AppConfig,
+    val continueUrlValidator: ContinueUrlValidator,
+    controllerComponents:     MessagesControllerComponents
+)(implicit val ec: ExecutionContext) extends FrontendController(controllerComponents) with WhitelistedContinueUrl {
 
-  def create(continueUrl: ContinueUrl): Action[AnyContent] = Action.async { implicit request =>
+  def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
 
       def redeemUrl(tokenUrl: URL): JsValueWrapper = {
         val encrypted = new String(frontendAppConfig.encrypt(PlainText(tokenUrl.toString)).toBase64)
-        println(s"${frontendAppConfig.ssoFeHost}/sso/session?token=$encrypted")
         s"${frontendAppConfig.ssoFeHost}/sso/session?token=$encrypted"
       }
 
@@ -59,11 +60,11 @@ class ApiTokenController @Inject() (val ssoConnector:         SsoConnector,
       .copy(sessionId = Some(SessionId(s"session-${UUID.randomUUID().toString}")))
 
     authConnector.getAuthUri().flatMap {
-      case Some(authResponse) => withWhitelistedContinueUrl(continueUrl) {
+      case Some(authResponse) => withWhitelistedContinueUrl(continueUrl) { whitelistedUrl =>
         val maybeApiToken = for {
           bearer <- hc.authorization
           sessionId <- hc.sessionId
-        } yield ApiToken(bearer.value, sessionId.value, continueUrl.url, authResponse.uri)
+        } yield ApiToken(bearer.value, sessionId.value, whitelistedUrl.url, authResponse.uri)
 
         maybeApiToken.fold {
           throw new BadRequestException("No Authorisation header in the request")
@@ -71,7 +72,7 @@ class ApiTokenController @Inject() (val ssoConnector:         SsoConnector,
         } { apiToken =>
           for {
             tokenUrl <- ssoConnector.createToken(apiToken)
-            _ = auditConnector.sendEvent(AuditEvent.create("api-sso-token-created", Some(continueUrl.url)))
+            _ = auditConnector.sendEvent(AuditEvent.create("api-sso-token-created", Some(whitelistedUrl.url)))
           } yield Ok(
             Json.obj(
               "_links" -> Json.obj(

@@ -19,21 +19,21 @@ package domains
 import play.api.mvc.Result
 import play.api.mvc.Results.BadRequest
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.binders.ContinueUrl
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait WhitelistedContinueUrl {
 
   def continueUrlValidator: ContinueUrlValidator
+  implicit val ec: ExecutionContext
 
-  def withWhitelistedContinueUrl(continue: ContinueUrl*)(body: => Future[Result])(implicit hc: HeaderCarrier) = {
-    Future.sequence(continue.map { value =>
-      continueUrlValidator.isRelativeOrAbsoluteWhiteListed(value)
-    }).flatMap { boolList =>
-      if (boolList.forall(identity)) body
-      else Future.successful(BadRequest("Invalid Continue URL"))
+  def withWhitelistedContinueUrl(continue: RedirectUrl)(body: SafeRedirectUrl => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    continueUrlValidator.getRelativeOrAbsoluteWhiteListed(continue).flatMap {
+      case Some(url) =>
+        body(url)
+      case None =>
+        Future.successful(BadRequest("Invalid Continue URL"))
     }
   }
 
