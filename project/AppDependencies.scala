@@ -6,9 +6,9 @@ private object AppDependencies {
 
   val compile = Seq(
     ehcache,
-    "uk.gov.hmrc" %% "bootstrap-play-26" % "1.3.0",
-    "uk.gov.hmrc" %% "government-gateway-domain" % "2.7.0",
-    "uk.gov.hmrc" %% "govuk-template" % "5.48.0-play-26"
+    "uk.gov.hmrc" %% "bootstrap-play-26" % "1.5.0",
+    "uk.gov.hmrc" %% "government-gateway-domain" % "2.8.0",
+    "uk.gov.hmrc" %% "govuk-template" % "5.52.0-play-26"
   )
 
   val test = Seq(

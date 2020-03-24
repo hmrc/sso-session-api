@@ -10,7 +10,7 @@ addSbtPlugin("uk.gov.hmrc" % "sbt-settings" % "3.11.0")
 
 addSbtPlugin("uk.gov.hmrc" % "sbt-distributables" % "1.6.0")
 
-addSbtPlugin("uk.gov.hmrc" % "sbt-service-manager" % "0.4.0")
+addSbtPlugin("uk.gov.hmrc" % "sbt-service-manager" % "0.5.0")
 
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.1")
 
@@ -22,8 +22,8 @@ addSbtPlugin("org.wartremover" % "sbt-wartremover" % "2.3.1")
 
 addSbtPlugin("uk.gov.hmrc" % "sbt-auto-build" % "1.16.0")
 
-addSbtPlugin("uk.gov.hmrc" % "sbt-git-versioning" % "1.19.0")
+addSbtPlugin("uk.gov.hmrc" % "sbt-git-versioning" % "1.20.0")
 
-addSbtPlugin("uk.gov.hmrc" % "sbt-artifactory" % "0.19.0")
+addSbtPlugin("uk.gov.hmrc" % "sbt-artifactory" % "0.21.0")
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
