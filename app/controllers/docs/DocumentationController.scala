@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package api
+package controllers.docs
 
 import controllers.Assets
 import javax.inject.Inject

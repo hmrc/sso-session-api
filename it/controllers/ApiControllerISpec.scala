@@ -1,4 +1,4 @@
-package websession
+package controllers
 
 import base.BaseISpec
 import play.api.libs.ws.WSResponse

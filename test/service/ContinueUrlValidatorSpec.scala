@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package domains
+package service
 
 import org.scalatest.concurrent.ScalaFutures
+import services.{ContinueUrlValidator, WhiteListService}
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}

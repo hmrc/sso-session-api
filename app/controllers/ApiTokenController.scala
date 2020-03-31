@@ -14,37 +14,35 @@
  * limitations under the License.
  */
 
-package websession.create
+package controllers
 
 import java.net.URL
 import java.util.UUID
 
-import audit.AuditEvent
-import auth.FrontendAuthConnector
+import audit.AuditingService
 import config._
-import connectors.SsoConnector
-import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
+import connectors.{FrontendAuthConnector, SsoConnector}
 import javax.inject.{Inject, Singleton}
+import models.ApiToken
 import play.api.libs.json.Json
 import play.api.libs.json.Json.JsValueWrapper
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import services.{ContinueUrlValidator, WhitelistedContinueUrl}
 import uk.gov.hmrc.crypto.PlainText
 import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, Upstream4xxResponse}
 import uk.gov.hmrc.play.HeaderCarrierConverter
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
-import websession.ApiToken
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ApiTokenController @Inject() (
-    val ssoConnector:         SsoConnector,
-    val authConnector:        FrontendAuthConnector,
-    val auditConnector:       AuditConnector,
-    val frontendAppConfig:    AppConfig,
+    ssoConnector:             SsoConnector,
+    authConnector:            FrontendAuthConnector,
+    auditingService:          AuditingService,
+    frontendAppConfig:        AppConfig,
     val continueUrlValidator: ContinueUrlValidator,
     controllerComponents:     MessagesControllerComponents
 )(implicit val ec: ExecutionContext) extends FrontendController(controllerComponents) with WhitelistedContinueUrl {
@@ -72,7 +70,7 @@ class ApiTokenController @Inject() (
         } { apiToken =>
           for {
             tokenUrl <- ssoConnector.createToken(apiToken)
-            _ = auditConnector.sendEvent(AuditEvent.create("api-sso-token-created", Some(whitelistedUrl.url)))
+            _ = auditingService.sendTokenCreatedEvent(whitelistedUrl.url)
           } yield Ok(
             Json.obj(
               "_links" -> Json.obj(

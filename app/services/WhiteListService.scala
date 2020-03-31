@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package domains
+package services
 
 import connectors.SsoConnector
 import javax.inject.{Inject, Singleton}

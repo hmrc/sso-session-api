@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package domains
+package connectors
 
 import config.AppConfig
-import connectors.SsoDomainsConnector
+import models.{DomainsResponse, WhiteListedDomains}
 import org.scalatest.concurrent.ScalaFutures
 import play.api.http.HeaderNames
 import play.api.libs.json.Json

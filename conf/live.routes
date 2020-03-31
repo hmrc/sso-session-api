@@ -1,4 +1,4 @@
 # Live API routes
 
 #api sso
-GET /web-session       websession.create.ApiTokenController.create(continueUrl: uk.gov.hmrc.play.bootstrap.binders.RedirectUrl)
+GET /web-session       controllers.ApiTokenController.create(continueUrl: uk.gov.hmrc.play.bootstrap.binders.RedirectUrl)

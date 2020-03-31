@@ -17,8 +17,9 @@
 package service
 
 import connectors.SsoConnector
-import domains.{CachedDomainsService, DomainsResponse, WhiteListService, WhiteListedDomains}
+import models.{DomainsResponse, WhiteListedDomains}
 import org.scalatest.concurrent.ScalaFutures
+import services.{CachedDomainsService, WhiteListService}
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}

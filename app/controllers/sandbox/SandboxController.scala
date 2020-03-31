@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package api
+package controllers.sandbox
 
-import domains.{ContinueUrlValidator, WhitelistedContinueUrl}
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.api.mvc._
+import services.{ContinueUrlValidator, WhitelistedContinueUrl}
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
