@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package domains
+package service
 
 import connectors.SsoDomainsConnector
+import models.{DomainsResponse, WhiteListedDomains}
 import play.api.cache.AsyncCacheApi
+import services.CachedDomainsService
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 

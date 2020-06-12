@@ -19,13 +19,13 @@ package connectors
 import java.net.URL
 
 import config.AppConfig
+import models.ApiToken
 import play.api.cache.AsyncCacheApi
 import play.api.libs.json.Json
 import play.mvc.Http.HeaderNames
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import websession.ApiToken
 
 import scala.concurrent.{ExecutionContext, Future}
 

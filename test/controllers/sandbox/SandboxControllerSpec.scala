@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package app.api
+package controllers.sandbox
 
-import api.SandboxController
-import domains.{ContinueUrlValidator, WhiteListService}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json._
 import play.api.mvc.MessagesControllerComponents
 import play.api.test.{FakeRequest, Injecting}
+import services.{ContinueUrlValidator, WhiteListService}
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}

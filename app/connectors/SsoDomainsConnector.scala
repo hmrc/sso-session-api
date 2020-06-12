@@ -19,8 +19,8 @@ package connectors
 import java.net.URL
 
 import config.AppConfig
-import domains.{DomainsResponse, WhiteListedDomains}
 import javax.inject.{Inject, Singleton}
+import models.{DomainsResponse, WhiteListedDomains}
 import play.api.http.HeaderNames
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.HeaderCarrier

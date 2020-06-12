@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package auth
+package services
 
-import config.AppConfig
-import javax.inject.{Inject, Singleton}
-import play.api.libs.json.{Json, OFormat}
+import play.api.mvc.Result
+import play.api.mvc.Results.BadRequest
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@Singleton
-class FrontendAuthConnector @Inject() (httpClient: HttpClient, frontendAppConfig: AppConfig) {
-  def getAuthUri()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AuthResponse]] = {
-    httpClient.GET[Option[AuthResponse]](s"${frontendAppConfig.authServiceUrl}/auth/authority")
+trait WhitelistedContinueUrl {
+
+  def continueUrlValidator: ContinueUrlValidator
+  implicit val ec: ExecutionContext
+
+  def withWhitelistedContinueUrl(continue: RedirectUrl)(body: SafeRedirectUrl => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    continueUrlValidator.getRelativeOrAbsoluteWhiteListed(continue).flatMap {
+      case Some(url) =>
+        body(url)
+      case None =>
+        Future.successful(BadRequest("Invalid Continue URL"))
+    }
   }
+
 }
-
-case class AuthResponse(uri: String)
-
-object AuthResponse {
-  implicit val format: OFormat[AuthResponse] = Json.format[AuthResponse]
-}
-

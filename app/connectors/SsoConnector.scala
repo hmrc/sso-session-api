@@ -21,6 +21,7 @@ import java.net.URL
 import com.google.inject.Inject
 import config.AppConfig
 import javax.inject.Singleton
+import models.ApiToken
 import play.api.cache.AsyncCacheApi
 import play.api.http.HeaderNames
 import play.api.libs.functional.syntax._
@@ -28,7 +29,6 @@ import play.api.libs.json.Reads._
 import play.api.libs.json._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import websession._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}

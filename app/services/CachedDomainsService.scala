@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package domains
+package services
 
 import connectors.SsoDomainsConnector
 import javax.inject.{Inject, Singleton}
+import models.DomainsResponse
 import play.api.Logger
 import play.api.cache.AsyncCacheApi
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class CachedDomainsService @Inject() (
