@@ -10,6 +10,7 @@
       "description": "Access a web session"
     }
   ],
+  "categories": ["OTHER"],
   "api": {
     "name": "Web Session API",
     "description": "Provides web/browser access to the current API user.",
