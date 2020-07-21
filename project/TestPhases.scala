@@ -9,8 +9,4 @@ object TestPhases {
   lazy val TemplateTest = config("tt") extend Test
   lazy val TemplateItTest = config("tit") extend IntegrationTest
 
-  def oneForkedJvmPerTest(tests: Seq[TestDefinition]) =
-    tests map {
-      test => Group(test.name, Seq(test), SubProcess(ForkOptions(runJVMOptions = Seq("-Dtest.name=" + test.name))))
-    }
 }
