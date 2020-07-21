@@ -1,9 +1,9 @@
-import TestPhases.{TemplateItTest, TemplateTest, oneForkedJvmPerTest}
-import uk.gov.hmrc.DefaultBuildSettings.{addTestReportOption, defaultSettings, scalaSettings}
-import uk.gov.hmrc.ExternalService
+import TestPhases.{TemplateItTest, TemplateTest}
+import uk.gov.hmrc.DefaultBuildSettings.{defaultSettings, scalaSettings}
 import uk.gov.hmrc.ServiceManagerPlugin.Keys.itDependenciesList
 import uk.gov.hmrc.ServiceManagerPlugin.serviceManagerSettings
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
+import uk.gov.hmrc.{DefaultBuildSettings, ExternalService}
 
 lazy val externalServices = List(
   ExternalService(name = "SSO"),
@@ -30,13 +30,7 @@ lazy val microservice = Project("sso-session-api", file("."))
   .settings(inConfig(TemplateItTest)(Defaults.itSettings): _*)
   .settings(serviceManagerSettings: _*)
   .settings(itDependenciesList := externalServices)
-  .settings(
-    Keys.fork in IntegrationTest := false,
-    unmanagedSourceDirectories in IntegrationTest <<= (baseDirectory in IntegrationTest) (base => Seq(base / "it")),
-    addTestReportOption(IntegrationTest, "int-test-reports"),
-    testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value),
-    parallelExecution in IntegrationTest := false
-  )
+  .settings(DefaultBuildSettings.integrationTestSettings())
   .settings(
     resolvers += Resolver.bintrayRepo("hmrc", "releases"),
     resolvers += "hmrc-releases" at "https://artefacts.tax.service.gov.uk/artifactory/hmrc-releases/"
