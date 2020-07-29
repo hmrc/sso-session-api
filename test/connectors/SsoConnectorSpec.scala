@@ -24,7 +24,7 @@ import play.api.cache.AsyncCacheApi
 import play.api.libs.json.Json
 import play.mvc.Http.HeaderNames
 import uk.gov.hmrc.gg.test.UnitSpec
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,13 +51,12 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
       when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
 
-      when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
-        HttpResponse(
+      when(http.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
+        Right(HttpResponse(
           200,
-          Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+          json = Json.obj("api-tokens" -> "http://mock-create-token-url"),
           Map.empty,
-          Some("response string")
-        )
+        ))
       ))
 
       val url = await(ssoConnector.getRootAffordance(_ => affordanceUri)(HeaderCarrier()))
@@ -68,22 +67,20 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
       when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
 
-      when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
-        HttpResponse(
+      when(http.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
+        Right(HttpResponse(
           200,
-          Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+          json = Json.obj("api-tokens" -> "http://mock-create-token-url"),
           Map.empty,
-          Some("response string")
-        )
+        ))
       ))
 
-      when(http.POST[ApiToken, HttpResponse](any, any, any)(any, any, any, any)).thenReturn(
-        Future.successful(HttpResponse(
+      when(http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any, any)).thenReturn(
+        Future.successful(Right(HttpResponse(
           200,
-          Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+          json = Json.obj("api-tokens" -> "http://mock-create-token-url"),
           Map(HeaderNames.LOCATION -> Seq("http://mock-create-token-response-url")),
-          Some("")
-        ))
+        )))
       )
       val futureUrl = ssoConnector.createToken(token)(HeaderCarrier())
       await(futureUrl) shouldBe new URL("http://mock-create-token-response-url")
@@ -94,20 +91,20 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
       when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
 
-      when(http.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(HttpResponse(
-        200,
-        Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
-        Map.empty,
-        Some("response string")
-      )))
-
-      when(http.POST[ApiToken, HttpResponse](any, any, any)(any, any, any, any)).thenReturn(
-        Future.successful(HttpResponse(
+      when(http.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(
+        Future.successful(Right(HttpResponse(
           200,
-          Some(Json.obj("api-tokens" -> "http://mock-create-token-url")),
+          json = Json.obj("api-tokens" -> "http://mock-create-token-url"),
           Map.empty,
-          Some("")
-        ))
+        )))
+      )
+
+      when(http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any, any)).thenReturn(
+        Future.successful(Right(HttpResponse(
+          200,
+          json = Json.obj("api-tokens" -> "http://mock-create-token-url"),
+          Map.empty,
+        )))
       )
 
       a[RuntimeException] shouldBe thrownBy {

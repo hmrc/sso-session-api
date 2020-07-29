@@ -23,8 +23,9 @@ import javax.inject.{Inject, Singleton}
 import models.{DomainsResponse, WhiteListedDomains}
 import play.api.http.HeaderNames
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,8 +40,13 @@ class SsoDomainsConnector @Inject() (http: HttpClient, appConfig: AppConfig)(imp
   implicit val whiteListedDomainsFormat: OFormat[WhiteListedDomains] = Json.format[WhiteListedDomains]
 
   def getDomains()(implicit hc: HeaderCarrier): Future[DomainsResponse] = {
-    http.GET(s"$serviceUrl/sso/domains").map { response =>
-      DomainsResponse(Json.parse(response.body).as[WhiteListedDomains], getMaxAgeFrom(response.header(HeaderNames.CACHE_CONTROL)).getOrElse(DefaultTTL))
+    http.GET[Either[UpstreamErrorResponse, HttpResponse]](s"$serviceUrl/sso/domains").map {
+      case Left(err) => throw err
+      case Right(response) =>
+        DomainsResponse(
+          Json.parse(response.body).as[WhiteListedDomains],
+          getMaxAgeFrom(response.header(HeaderNames.CACHE_CONTROL)).getOrElse(DefaultTTL)
+        )
     }
   }
 
