@@ -22,7 +22,7 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.gg.test.UnitSpec
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,13 +43,12 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockWhiteListedDomains = WhiteListedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(mockHttp.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
-        HttpResponse(
+      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
+        Right(HttpResponse(
           200,
-          Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains)),
+          json = Json.format[WhiteListedDomains].writes(mockWhiteListedDomains),
           Map(HeaderNames.CACHE_CONTROL -> Seq("max-age=33")),
-          Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains).toString())
-        )
+        ))
       ))
 
       val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
@@ -68,13 +67,12 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockWhiteListedDomains = WhiteListedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(mockHttp.GET[HttpResponse](any)(any, any, any)).thenReturn(Future.successful(
-        HttpResponse(
+      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
+        Right(HttpResponse(
           200,
-          Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains)),
+          json = Json.format[WhiteListedDomains].writes(mockWhiteListedDomains),
           Map.empty,
-          Some(Json.format[WhiteListedDomains].writes(mockWhiteListedDomains).toString())
-        )
+        ))
       ))
 
       val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))

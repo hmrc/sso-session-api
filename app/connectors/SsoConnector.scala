@@ -27,6 +27,7 @@ import play.api.http.HeaderNames
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
+import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -42,7 +43,7 @@ class SsoConnector @Inject() (
   extends ApiJsonFormats
   with PlayCache {
 
-  def serviceUrl = new URL(appConfig.ssoUrl)
+  private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
   def getRootAffordance(reader: JsValue => String)(implicit hc: HeaderCarrier): Future[URL] = {
     for {
@@ -54,7 +55,10 @@ class SsoConnector @Inject() (
   def createToken(tokenRequest: ApiToken)(implicit hc: HeaderCarrier): Future[URL] = {
     for {
       createTokensUrl <- getRootAffordance(json => (json \ "api-tokens").as[String])
-      response <- http.POST[ApiToken, HttpResponse](createTokensUrl.toString, tokenRequest)
+      response <- http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](createTokensUrl.toString, tokenRequest).map {
+        case Right(response) => response
+        case Left(err)       => throw err
+      }
       uri = response.header(HeaderNames.LOCATION).getOrElse(
         throw new RuntimeException("Couldn't get a url from location header ")
       )
@@ -98,11 +102,15 @@ trait PlayCache {
       case Some(cachedValue) =>
         Future.successful(cachedValue)
       case None =>
-        http.GET[HttpResponse](urlAsString).flatMap { response =>
-          response.header(HeaderNames.CACHE_CONTROL).collect {
-            case cacheControlPattern(seconds) =>
-              cache.set(urlAsString, response, seconds.toLong.seconds).map(_ => response)
-          }.getOrElse(Future.successful(response))
+        http.GET[Either[UpstreamErrorResponse, HttpResponse]](urlAsString).flatMap {
+          case Right(response) =>
+            response.header(HeaderNames.CACHE_CONTROL).collect {
+              case cacheControlPattern(seconds) =>
+                cache.set(urlAsString, response, seconds.toLong.seconds).map(_ => response)
+            }.getOrElse(Future.successful(response))
+
+          case Left(err) =>
+            throw err
         }
     }
   }

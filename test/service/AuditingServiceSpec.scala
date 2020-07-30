@@ -17,7 +17,6 @@
 package service
 
 import audit.AuditingService
-import org.joda.time.DateTimeUtils
 import org.mockito.captor.ArgCaptor
 import org.scalatest.BeforeAndAfterEach
 import play.api.test.FakeRequest
@@ -25,7 +24,6 @@ import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.{HeaderNames, SessionKeys}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.DataEvent
-import uk.gov.hmrc.time.{DateTimeUtils => HmrcDateTimeUtils}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -59,7 +57,6 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
         "user-id" -> userid,
         "bearer-token" -> authToken
       )
-      dataEvent.generatedAt.toString shouldBe HmrcDateTimeUtils.now.toString
     }
   }
 
@@ -88,15 +85,5 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
     when(mockAuditConnector.sendEvent(any)(any, any)).thenReturn(Future.successful(AuditResult.Disabled))
 
     val service = new AuditingService(mockAuditConnector)(ExecutionContext.global)
-  }
-
-  override protected def beforeEach(): Unit = {
-    super.beforeEach()
-    DateTimeUtils.setCurrentMillisFixed(System.currentTimeMillis())
-  }
-
-  override protected def afterEach(): Unit = {
-    super.afterEach()
-    DateTimeUtils.setCurrentMillisSystem()
   }
 }

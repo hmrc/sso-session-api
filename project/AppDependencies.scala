@@ -6,13 +6,13 @@ private object AppDependencies {
 
   val compile = Seq(
     ehcache,
-    "uk.gov.hmrc" %% "bootstrap-play-26" % "1.9.0",
-    "uk.gov.hmrc" %% "government-gateway-domain" % "2.8.0",
+    "uk.gov.hmrc" %% "bootstrap-play-26" % "1.14.0",
+    "uk.gov.hmrc" %% "government-gateway-domain" % "5.1.0",
     "uk.gov.hmrc" %% "govuk-template" % "5.52.0-play-26"
   )
 
   val test = Seq(
-    "uk.gov.hmrc" %% "government-gateway-test" % "2.6.0" % "test,it"
+    "uk.gov.hmrc" %% "government-gateway-test" % "3.2.0" % "test,it"
   )
 
   def apply() = compile ++ test

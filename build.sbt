@@ -1,19 +1,5 @@
-import TestPhases.{TemplateItTest, TemplateTest}
 import uk.gov.hmrc.DefaultBuildSettings.{addTestReportOption, defaultSettings, scalaSettings}
-import uk.gov.hmrc.ExternalService
-import uk.gov.hmrc.ServiceManagerPlugin.Keys.itDependenciesList
-import uk.gov.hmrc.ServiceManagerPlugin.serviceManagerSettings
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
-
-lazy val externalServices = List(
-  ExternalService(name = "SSO"),
-  ExternalService(name = "SSO_FRONTEND"),
-  ExternalService(name = "OPENID_CONNECT_IDTOKEN"),
-  ExternalService(name = "AUTH"),
-  ExternalService(name = "AUTH_LOGIN_API"),
-  ExternalService(name = "USER_DETAILS"),
-  ExternalService(name = "IDENTITY_VERIFICATION")
-)
 
 lazy val microservice = Project("sso-session-api", file("."))
   .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
@@ -25,11 +11,13 @@ lazy val microservice = Project("sso-session-api", file("."))
   .settings(defaultSettings(): _*)
   .settings(libraryDependencies ++= AppDependencies())
   .settings(Repositories.playPublishingSettings: _*)
-  .settings(inConfig(TemplateTest)(Defaults.testSettings): _*)
   .configs(IntegrationTest)
-  .settings(inConfig(TemplateItTest)(Defaults.itSettings): _*)
-  .settings(serviceManagerSettings: _*)
-  .settings(itDependenciesList := externalServices)
+  .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
+  .settings(
+    Keys.fork in IntegrationTest := false,
+    unmanagedSourceDirectories in IntegrationTest := (baseDirectory in IntegrationTest) (base => Seq(base / "it")).value,
+    addTestReportOption(IntegrationTest, "int-test-reports"),
+    parallelExecution in IntegrationTest := false)
   .settings(
     resolvers += Resolver.bintrayRepo("hmrc", "releases"),
     resolvers += "hmrc-releases" at "https://artefacts.tax.service.gov.uk/artifactory/hmrc-releases/"
