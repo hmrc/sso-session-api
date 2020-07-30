@@ -43,7 +43,7 @@ class SsoConnector @Inject() (
   extends ApiJsonFormats
   with PlayCache {
 
-  def serviceUrl = new URL(appConfig.ssoUrl)
+  private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
   def getRootAffordance(reader: JsValue => String)(implicit hc: HeaderCarrier): Future[URL] = {
     for {

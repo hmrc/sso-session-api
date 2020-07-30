@@ -66,7 +66,6 @@ class ApiTokenController @Inject() (
 
         maybeApiToken.fold {
           throw new BadRequestException("No Authorisation header in the request")
-
         } { apiToken =>
           for {
             tokenUrl <- ssoConnector.createToken(apiToken)

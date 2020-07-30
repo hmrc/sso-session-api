@@ -12,7 +12,7 @@ private object AppDependencies {
   )
 
   val test = Seq(
-    "uk.gov.hmrc" %% "government-gateway-test" % "2.6.0" % "test,it"
+    "uk.gov.hmrc" %% "government-gateway-test" % "3.2.0" % "test,it"
   )
 
   def apply() = compile ++ test
