@@ -58,7 +58,6 @@ class ApiControllerWireMockSpec extends BaseISpec {
         .withRequestBody(containing(s""""bearer-token":"$authToken""""))
         .withRequestBody(containing(""""session-id":"""))
         .withRequestBody(containing(s""""continue-url":"$continueUrl""""))
-        .withRequestBody(containing(s""""user-id":"$userId""""))
         .willReturn(ok.withHeader(LOCATION, "/api-token-location"))
       )
     }

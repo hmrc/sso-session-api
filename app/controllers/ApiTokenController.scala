@@ -21,11 +21,10 @@ import java.util.UUID
 
 import audit.AuditingService
 import config._
-import connectors.{FrontendAuthConnector, SsoConnector}
+import connectors.SsoConnector
 import javax.inject.{Inject, Singleton}
 import models.ApiToken
 import play.api.libs.json.Json
-import play.api.libs.json.Json.JsValueWrapper
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.{ContinueUrlValidator, WhitelistedContinueUrl}
 import uk.gov.hmrc.crypto.PlainText
@@ -35,12 +34,11 @@ import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class ApiTokenController @Inject() (
     ssoConnector:             SsoConnector,
-    authConnector:            FrontendAuthConnector,
     auditingService:          AuditingService,
     frontendAppConfig:        AppConfig,
     val continueUrlValidator: ContinueUrlValidator,
@@ -48,42 +46,38 @@ class ApiTokenController @Inject() (
 )(implicit val ec: ExecutionContext) extends FrontendController(controllerComponents) with WhitelistedContinueUrl {
 
   def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
-
-      def redeemUrl(tokenUrl: URL): JsValueWrapper = {
-        val encrypted = new String(frontendAppConfig.encrypt(PlainText(tokenUrl.toString)).toBase64)
-        s"${frontendAppConfig.ssoFeHost}/sso/session?token=$encrypted"
-      }
-
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
       .copy(sessionId = Some(SessionId(s"session-${UUID.randomUUID().toString}")))
 
-    authConnector.getAuthUri().flatMap {
-      case Some(authResponse) => withWhitelistedContinueUrl(continueUrl) { whitelistedUrl =>
-        val maybeApiToken = for {
-          bearer <- hc.authorization
-          sessionId <- hc.sessionId
-        } yield ApiToken(bearer.value, sessionId.value, whitelistedUrl.url, authResponse.uri)
+    withWhitelistedContinueUrl(continueUrl) { whitelistedUrl =>
+      val maybeApiToken = for {
+        bearer <- hc.authorization
+        sessionId <- hc.sessionId
+      } yield ApiToken(bearer.value, sessionId.value, whitelistedUrl.url, Some("deprecated"))
 
-        maybeApiToken.fold {
-          throw new BadRequestException("No Authorisation header in the request")
-        } { apiToken =>
-          for {
-            tokenUrl <- ssoConnector.createToken(apiToken)
-            _ = auditingService.sendTokenCreatedEvent(whitelistedUrl.url)
-          } yield Ok(
-            Json.obj(
-              "_links" -> Json.obj(
-                "session" -> redeemUrl(tokenUrl)
-              )
-            ))
-        }
+      maybeApiToken.fold {
+        throw new BadRequestException("No Authorisation header in the request")
+      } { apiToken =>
+        for {
+          tokenUrl <- ssoConnector.createToken(apiToken)
+          _ = auditingService.sendTokenCreatedEvent(whitelistedUrl.url)
+        } yield Ok(
+          Json.obj(
+            "_links" -> Json.obj(
+              "session" -> redeemUrl(tokenUrl)
+            )
+          ))
       }
-      case _ => Future.successful(Unauthorized)
     }.recover {
       case Upstream4xxResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq): _*)
       case Upstream4xxResponse(_, FORBIDDEN, _, headers)    => Forbidden.withHeaders(unGroup(headers.toSeq): _*)
-      case e: BadRequestException                           => BadRequest(e.message)
+      case Upstream4xxResponse(message, BAD_REQUEST, _, _)  => BadRequest(message)
     }
+  }
+
+  private def redeemUrl(tokenUrl: URL) = {
+    val encrypted = new String(frontendAppConfig.encrypt(PlainText(tokenUrl.toString)).toBase64)
+    s"${frontendAppConfig.ssoFeHost}/sso/session?token=$encrypted"
   }
 
   private def unGroup[T, U](in: Seq[(T, Seq[U])]): Seq[(T, U)] = for {

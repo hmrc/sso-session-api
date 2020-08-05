@@ -37,8 +37,8 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
     val affordanceUri = "/affordance-uri"
     val http = mock[HttpClient]
     val serviceBaseURL = "http://mockbaseurl:1234"
-    val token = ApiToken("mockBearerToken", "mockSessionID", "mockContinueURL", "mockUserID")
-    val ssnInfo = SsoInSessionInfo("bearerToken", "sessionID", "userID")
+    val token = ApiToken("mockBearerToken", "mockSessionID", "mockContinueURL", None)
+    val ssnInfo = SsoInSessionInfo("bearerToken", "sessionID")
     val mockAppConfig = mock[AppConfig]
 
     val ssoConnector = new SsoConnector(cache, http, mockAppConfig)(ExecutionContext.global)

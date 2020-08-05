@@ -70,15 +70,15 @@ class SsoConnector @Inject() (
   }
 }
 
-case class SsoInSessionInfo(bearerToken: String, sessionId: String, userId: String)
+case class SsoInSessionInfo(bearerToken: String, sessionId: String)
 
 trait ApiJsonFormats {
   implicit val tokenRequestRead: Format[ApiToken] = (
     (JsPath \ "bearer-token").format[String] and
     (JsPath \ "session-id").format[String] and
     (JsPath \ "continue-url").format[String] and
-    (JsPath \ "user-id").format[String]
-  ) (ApiToken.apply, { case ApiToken(b, s, c, u) => (b, s, c, u) })
+    (JsPath \ "user-id").formatNullable[String]
+  ) (ApiToken.apply, unlift(ApiToken.unapply))
 
   implicit val ssoInSessionInfoRead: Reads[SsoInSessionInfo] = Json.reads[SsoInSessionInfo]
 

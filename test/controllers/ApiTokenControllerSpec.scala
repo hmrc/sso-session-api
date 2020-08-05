@@ -20,7 +20,7 @@ import java.net.URL
 
 import audit.AuditingService
 import config._
-import connectors.{AuthResponse, FrontendAuthConnector, SsoConnector}
+import connectors.SsoConnector
 import org.apache.commons.codec.binary.Base64
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -32,8 +32,7 @@ import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.{HeaderNames => HmrcHeaderNames}
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
@@ -57,19 +56,17 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
     val mockAppConfig = mock[AppConfig]
     val mockSsoConnector = mock[SsoConnector]
-    val mockAuthConnector = mock[FrontendAuthConnector]
     val mockAuditingService = mock[AuditingService]
     val mockContinueUrlValidator = mock[ContinueUrlValidator]
     val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
 
     val apiTokenController = new ApiTokenController(
       ssoConnector         = mockSsoConnector,
-      authConnector        = mockAuthConnector,
       auditingService      = mockAuditingService,
       frontendAppConfig    = mockAppConfig,
       continueUrlValidator = mockContinueUrlValidator,
       messagesControllerComponents
-    )
+    )(ExecutionContext.global)
   }
 
   "create" should {
@@ -79,7 +76,6 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
 
       val tokenUrl = new URL("http://sso.service/tokenId/1234")
-      when(mockAuthConnector.getAuthUri()(any, any)).thenReturn(Future.successful(Some(AuthResponse("testing"))))
 
       when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
 
@@ -97,15 +93,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       verify(mockAuditingService).sendTokenCreatedEvent(eqTo(continueUrl.unsafeValue))(any)
     }
 
-    "respond with 401 if the user is not logged in" in new Setup {
-      when(mockAuthConnector.getAuthUri()(any, any)).thenReturn(Future.successful(None))
-
-      val result = apiTokenController.create(continueUrl)(createRequestWithSessionIdAndBearerToken)
-      status(result) shouldBe 401
-    }
-
     "respond with 200 if no session-id provided" in new Setup {
-      when(mockAuthConnector.getAuthUri()(any, any)).thenReturn(Future.successful(Some(AuthResponse("testing"))))
       when(mockContinueUrlValidator.getRelativeOrAbsoluteWhiteListed(any)(any)).thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
       when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
       when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")

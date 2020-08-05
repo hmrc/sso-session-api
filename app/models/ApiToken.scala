@@ -16,4 +16,4 @@
 
 package models
 
-case class ApiToken(bearerToken: String, sessionId: String, continueUrl: String, userId: String)
+case class ApiToken(bearerToken: String, sessionId: String, continueUrl: String, userId: Option[String])
