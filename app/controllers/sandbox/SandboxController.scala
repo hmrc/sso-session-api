@@ -19,7 +19,7 @@ package controllers.sandbox
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.api.mvc._
-import services.{ContinueUrlValidator, WhitelistedContinueUrl}
+import services.{ContinueUrlValidator, PermittedContinueUrl}
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 
@@ -31,10 +31,10 @@ class SandboxController @Inject() (
     controllerComponents:     MessagesControllerComponents
 )(implicit val ec: ExecutionContext)
   extends FrontendController(controllerComponents)
-  with WhitelistedContinueUrl {
+  with PermittedContinueUrl {
 
   def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
-    withWhitelistedContinueUrl(continueUrl) { _ =>
+    withPermittedContinueUrl(continueUrl) { _ =>
       Future.successful(
         Ok(Json.obj(
           "_links" -> Json.obj(

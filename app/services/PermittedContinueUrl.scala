@@ -23,13 +23,13 @@ import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait WhitelistedContinueUrl {
+trait PermittedContinueUrl {
 
   def continueUrlValidator: ContinueUrlValidator
   implicit val ec: ExecutionContext
 
-  def withWhitelistedContinueUrl(continue: RedirectUrl)(body: SafeRedirectUrl => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
-    continueUrlValidator.getRelativeOrAbsoluteWhiteListed(continue).flatMap {
+  def withPermittedContinueUrl(continue: RedirectUrl)(body: SafeRedirectUrl => Future[Result])(implicit hc: HeaderCarrier): Future[Result] = {
+    continueUrlValidator.getRelativeOrAbsolutePermitted(continue).flatMap {
       case Some(url) =>
         body(url)
       case None =>

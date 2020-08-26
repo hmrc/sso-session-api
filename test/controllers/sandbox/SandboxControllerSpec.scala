@@ -20,7 +20,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json._
 import play.api.mvc.MessagesControllerComponents
 import play.api.test.{FakeRequest, Injecting}
-import services.{ContinueUrlValidator, WhiteListService}
+import services.{ContinueUrlValidator, AllowlistService}
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
@@ -28,16 +28,16 @@ import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 import scala.concurrent.{ExecutionContext, Future}
 
 class SandboxControllerSpec extends UnitSpec with GuiceOneAppPerSuite with Injecting {
-  val whiteListService: WhiteListService = mock[WhiteListService]
+  val allowlistService: AllowlistService = mock[AllowlistService]
 
-  object succeedingValidator extends ContinueUrlValidator(whiteListService) {
-    override def getRelativeOrAbsoluteWhiteListed(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
+  object succeedingValidator extends ContinueUrlValidator(allowlistService) {
+    override def getRelativeOrAbsolutePermitted(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
       Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue)))
     }
   }
 
-  object failingValidator extends ContinueUrlValidator(whiteListService) {
-    override def getRelativeOrAbsoluteWhiteListed(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
+  object failingValidator extends ContinueUrlValidator(allowlistService) {
+    override def getRelativeOrAbsolutePermitted(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
       Future.successful(None)
     }
   }

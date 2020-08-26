@@ -17,7 +17,7 @@
 package connectors
 
 import config.AppConfig
-import models.{DomainsResponse, WhiteListedDomains}
+import models.{DomainsResponse, PermittedDomains}
 import org.scalatest.concurrent.ScalaFutures
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
@@ -41,12 +41,12 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
 
     "return Future[DomainsResponse] and max-age value when getDomains() is called" in new Setup {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
-      val mockWhiteListedDomains = WhiteListedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
+      val mockPermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
       when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
         Right(HttpResponse(
           200,
-          json = Json.format[WhiteListedDomains].writes(mockWhiteListedDomains),
+          json = Json.format[PermittedDomains].writes(mockPermittedDomains),
           Map(HeaderNames.CACHE_CONTROL -> Seq("max-age=33")),
         ))
       ))
@@ -54,23 +54,23 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
       val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
 
       domains match {
-        case DomainsResponse(WhiteListedDomains(extDomains, intDomains), maxAge) => {
+        case DomainsResponse(PermittedDomains(extDomains, intDomains), maxAge) => {
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
           maxAge shouldBe 33
         }
-        case _ => fail("WhiteListedDomains expected")
+        case _ => fail("PermittedDomains expected")
       }
     }
 
     "return Future[DomainsResponse] and default max-age value when getDomains() is called where no max-age header in http response" in new Setup {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
-      val mockWhiteListedDomains = WhiteListedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
+      val mockPermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
       when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
         Right(HttpResponse(
           200,
-          json = Json.format[WhiteListedDomains].writes(mockWhiteListedDomains),
+          json = Json.format[PermittedDomains].writes(mockPermittedDomains),
           Map.empty,
         ))
       ))
@@ -78,12 +78,12 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
       val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
 
       domains match {
-        case DomainsResponse(WhiteListedDomains(extDomains, intDomains), maxAge) => {
+        case DomainsResponse(PermittedDomains(extDomains, intDomains), maxAge) => {
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
           maxAge shouldBe 60
         }
-        case _ => fail("WhiteListedDomains expected")
+        case _ => fail("PermittedDomains expected")
       }
     }
 

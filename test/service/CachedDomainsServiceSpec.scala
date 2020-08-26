@@ -17,7 +17,7 @@
 package service
 
 import connectors.SsoDomainsConnector
-import models.{DomainsResponse, WhiteListedDomains}
+import models.{DomainsResponse, PermittedDomains}
 import play.api.cache.AsyncCacheApi
 import services.CachedDomainsService
 import uk.gov.hmrc.gg.test.UnitSpec
@@ -32,10 +32,10 @@ class CachedDomainsServiceSpec extends UnitSpec {
     val mockSsoDomainsConnector = mock[SsoDomainsConnector]
     val mockCache = mock[AsyncCacheApi]
 
-    val domainsFromRealSSO = DomainsResponse(WhiteListedDomains(Set.empty, Set.empty), 123)
+    val domainsFromRealSSO = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 123)
     val ssoResponseWithSuggestedTTL = (domainsFromRealSSO, Some("max-age=123"))
     val ssoResponseWithNoTTL = (domainsFromRealSSO, None)
-    val cachedDomains = DomainsResponse(WhiteListedDomains(Set.empty, Set.empty), 0)
+    val cachedDomains = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 0)
 
     val cachedDomainsService = new CachedDomainsService(mockSsoDomainsConnector, mockCache)(ExecutionContext.global)
   }

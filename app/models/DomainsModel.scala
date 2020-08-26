@@ -16,11 +16,11 @@
 
 package models
 
-case class WhiteListedDomains(externalDomains: Set[String], internalDomains: Set[String])
+case class PermittedDomains(externalDomains: Set[String], internalDomains: Set[String])
 
-case class DomainsResponse(whitelistedDomains: WhiteListedDomains, maxAge: Int) {
-  val allDomains = whitelistedDomains.externalDomains ++ whitelistedDomains.internalDomains
-  val internalDomains = whitelistedDomains.internalDomains
-  val externalDomains = whitelistedDomains.externalDomains
+case class DomainsResponse(permittedDomains: PermittedDomains, maxAge: Int) {
+  val allDomains = permittedDomains.externalDomains ++ permittedDomains.internalDomains
+  val internalDomains = permittedDomains.internalDomains
+  val externalDomains = permittedDomains.externalDomains
 }
 

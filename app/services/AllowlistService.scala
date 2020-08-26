@@ -16,7 +16,6 @@
 
 package services
 
-import connectors.SsoConnector
 import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.http.HeaderCarrier
@@ -26,12 +25,9 @@ import uk.gov.hmrc.play.bootstrap.binders.{AbsoluteWithHostnameFromWhitelist, Re
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class WhiteListService @Inject() (
-    cachedDomainService: CachedDomainsService,
-    ssoConnector:        SsoConnector
-)(implicit val ec: ExecutionContext) {
+class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(implicit val ec: ExecutionContext) {
 
-  def getWhitelistedAbsoluteUrl(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
+  def getPermittedAbsoluteUrl(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
     cachedDomainService.getDomains.map {
       case Some(validDomains) =>
         continueUrl.getEither(AbsoluteWithHostnameFromWhitelist(validDomains.allDomains)).toOption

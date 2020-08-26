@@ -26,7 +26,7 @@ import javax.inject.{Inject, Singleton}
 import models.ApiToken
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import services.{ContinueUrlValidator, WhitelistedContinueUrl}
+import services.{ContinueUrlValidator, PermittedContinueUrl}
 import uk.gov.hmrc.crypto.PlainText
 import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, Upstream4xxResponse}
@@ -43,24 +43,24 @@ class ApiTokenController @Inject() (
     frontendAppConfig:        AppConfig,
     val continueUrlValidator: ContinueUrlValidator,
     controllerComponents:     MessagesControllerComponents
-)(implicit val ec: ExecutionContext) extends FrontendController(controllerComponents) with WhitelistedContinueUrl {
+)(implicit val ec: ExecutionContext) extends FrontendController(controllerComponents) with PermittedContinueUrl {
 
   def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
       .copy(sessionId = Some(SessionId(s"session-${UUID.randomUUID().toString}")))
 
-    withWhitelistedContinueUrl(continueUrl) { whitelistedUrl =>
+    withPermittedContinueUrl(continueUrl) { permittedUrl =>
       val maybeApiToken = for {
         bearer <- hc.authorization
         sessionId <- hc.sessionId
-      } yield ApiToken(bearer.value, sessionId.value, whitelistedUrl.url, Some("deprecated"))
+      } yield ApiToken(bearer.value, sessionId.value, permittedUrl.url, Some("deprecated"))
 
       maybeApiToken.fold {
         throw new BadRequestException("No Authorisation header in the request")
       } { apiToken =>
         for {
           tokenUrl <- ssoConnector.createToken(apiToken)
-          _ = auditingService.sendTokenCreatedEvent(whitelistedUrl.url)
+          _ = auditingService.sendTokenCreatedEvent(permittedUrl.url)
         } yield Ok(
           Json.obj(
             "_links" -> Json.obj(
