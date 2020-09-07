@@ -54,7 +54,6 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
       dataEvent.detail shouldBe Map(
         "continueUrl" -> redirectUrl,
         "session-id" -> sessionId,
-        "user-id" -> userid,
         "bearer-token" -> authToken
       )
     }
@@ -69,7 +68,6 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
     val deviceId = "deviceId"
     val sessionId = "sessionId"
     val authToken = "authToken"
-    val userid = "userid"
 
     val fakeRequestWithHeaders = FakeRequest()
       .withHeaders(HeaderNames.trueClientIp -> clientIp)
@@ -79,7 +77,6 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
       .withHeaders(HeaderNames.deviceID -> deviceId)
       .withSession(SessionKeys.sessionId -> sessionId)
       .withSession(SessionKeys.authToken -> authToken)
-      .withSession(SessionKeys.userId -> userid)
 
     val mockAuditConnector = mock[AuditConnector]
     when(mockAuditConnector.sendEvent(any)(any, any)).thenReturn(Future.successful(AuditResult.Disabled))
