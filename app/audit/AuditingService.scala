@@ -36,7 +36,8 @@ class AuditingService @Inject() (
       Map(
         "continueUrl" -> continueUrl,
         "bearer-token" -> hc.authorization.map(_.value).getOrElse("-"),
-        "session-id" -> hc.sessionId.map(_.value).getOrElse("-")
+        "session-id" -> hc.sessionId.map(_.value).getOrElse("-"),
+        "user-id" -> hc.userId.map(_.value).getOrElse("-")
       )
     )
   }
