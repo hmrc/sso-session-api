@@ -22,7 +22,6 @@ import com.google.inject.Inject
 import config.AppConfig
 import javax.inject.Singleton
 import models.ApiToken
-import play.api.cache.AsyncCacheApi
 import play.api.http.HeaderNames
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
@@ -31,38 +30,29 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SsoConnector @Inject() (
-    val cache: AsyncCacheApi,
-    val http:  HttpClient,
+    http:      HttpClient,
     appConfig: AppConfig
 )(implicit val ec: ExecutionContext)
-  extends ApiJsonFormats
-  with PlayCache {
+  extends ApiJsonFormats {
 
   private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
-  def getRootAffordance(reader: JsValue => String)(implicit hc: HeaderCarrier): Future[URL] = {
-    for {
-      resp <- withCache(serviceUrl)
-      affordanceUri = reader(resp.json)
-    } yield new URL(serviceUrl, affordanceUri)
-  }
-
   def createToken(tokenRequest: ApiToken)(implicit hc: HeaderCarrier): Future[URL] = {
+    val createTokensUrl = serviceUrl + "/sso/api-tokens"
+
     for {
-      createTokensUrl <- getRootAffordance(json => (json \ "api-tokens").as[String])
-      response <- http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](createTokensUrl.toString, tokenRequest).map {
+      response <- http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](createTokensUrl, tokenRequest).map {
         case Right(response) => response
         case Left(err)       => throw err
       }
       uri = response.header(HeaderNames.LOCATION).getOrElse(
         throw new RuntimeException("Couldn't get a url from location header ")
       )
-    } yield new URL(createTokensUrl, uri)
+    } yield new URL(serviceUrl, uri)
   }
 
   def getTokenDetails(tokenUrl: URL)(implicit hc: HeaderCarrier): Future[ApiToken] = {
@@ -83,36 +73,3 @@ trait ApiJsonFormats {
   implicit val ssoInSessionInfoRead: Reads[SsoInSessionInfo] = Json.reads[SsoInSessionInfo]
 
 }
-
-// See http://www.ehcache.org/generated/2.10.1/pdf/Ehcache_Configuration_Guide.pdf. Define max size and MemoryStoreEvictionPolicy to control eviction policy.
-trait PlayCache {
-
-  def http: HttpGet
-
-  def cache: AsyncCacheApi
-
-  implicit val ec: ExecutionContext
-
-  private val cacheControlPattern = "max-age=(\\d+)".r
-
-  def withCache(url: URL)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val urlAsString = url.toString
-
-    cache.get[HttpResponse](urlAsString).flatMap {
-      case Some(cachedValue) =>
-        Future.successful(cachedValue)
-      case None =>
-        http.GET[Either[UpstreamErrorResponse, HttpResponse]](urlAsString).flatMap {
-          case Right(response) =>
-            response.header(HeaderNames.CACHE_CONTROL).collect {
-              case cacheControlPattern(seconds) =>
-                cache.set(urlAsString, response, seconds.toLong.seconds).map(_ => response)
-            }.getOrElse(Future.successful(response))
-
-          case Left(err) =>
-            throw err
-        }
-    }
-  }
-}
-
