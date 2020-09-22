@@ -10,7 +10,6 @@ class ApiControllerWireMockSpec extends BaseISpec {
   "api" should {
     "create an api sso token with random session-id" in new Setup {
       expectAuthorityRecordToBeFound()
-      expectSsoToReturnServiceDescription()
       expectTokenToBeSuccessfullyCreated("/somewhere")
 
       val response = await(resourceRequest("/web-session")
@@ -43,17 +42,8 @@ class ApiControllerWireMockSpec extends BaseISpec {
         ).toString)))
     }
 
-    def expectSsoToReturnServiceDescription(): Unit = {
-      stubFor(get("/")
-        .willReturn(okJson(Json.obj(
-          "api-tokens" -> "/api-tokens",
-          "portal-session" -> "/portal-session"
-        ).toString))
-      )
-    }
-
     def expectTokenToBeSuccessfullyCreated(continueUrl: String): Unit = {
-      stubFor(post("/api-tokens")
+      stubFor(post("/sso/api-tokens")
         // the session ID is randomly generated, so the request body can't directly be matched
         .withRequestBody(containing(s""""bearer-token":"$authToken""""))
         .withRequestBody(containing(""""session-id":"""))

@@ -20,7 +20,6 @@ import java.net.URL
 
 import config.AppConfig
 import models.ApiToken
-import play.api.cache.AsyncCacheApi
 import play.api.libs.json.Json
 import play.mvc.Http.HeaderNames
 import uk.gov.hmrc.gg.test.UnitSpec
@@ -32,8 +31,6 @@ import scala.concurrent.{ExecutionContext, Future}
 class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
 
   trait Setup {
-    val cache = mock[AsyncCacheApi]
-
     val affordanceUri = "/affordance-uri"
     val http = mock[HttpClient]
     val serviceBaseURL = "http://mockbaseurl:1234"
@@ -41,39 +38,13 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
     val ssnInfo = SsoInSessionInfo("bearerToken", "sessionID")
     val mockAppConfig = mock[AppConfig]
 
-    val ssoConnector = new SsoConnector(cache, http, mockAppConfig)(ExecutionContext.global)
+    val ssoConnector = new SsoConnector(http, mockAppConfig)(ExecutionContext.global)
   }
 
   "SsoConnector" should {
 
-    "return affordance URI using given json reader" in new Setup {
-
-      when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
-      when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
-
-      when(http.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
-        Right(HttpResponse(
-          200,
-          json = Json.obj("api-tokens" -> "http://mock-create-token-url"),
-          Map.empty,
-        ))
-      ))
-
-      val url = await(ssoConnector.getRootAffordance(_ => affordanceUri)(HeaderCarrier()))
-      url shouldBe new URL(serviceBaseURL + "/affordance-uri")
-    }
-
     "on calling createToken, POST request to sso createTokensURL, return url constructed from the response LOCATION header" in new Setup {
-      when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
-
-      when(http.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
-        Right(HttpResponse(
-          200,
-          json = Json.obj("api-tokens" -> "http://mock-create-token-url"),
-          Map.empty,
-        ))
-      ))
 
       when(http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any, any)).thenReturn(
         Future.successful(Right(HttpResponse(
@@ -88,16 +59,7 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
     }
 
     "on calling createToken, POST request to sso createTokensURL, throw exception when no url in response LOCATION header" in new Setup {
-      when(cache.get[HttpResponse](any)(any)).thenReturn(Future.successful(None))
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
-
-      when(http.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(
-        Future.successful(Right(HttpResponse(
-          200,
-          json = Json.obj("api-tokens" -> "http://mock-create-token-url"),
-          Map.empty,
-        )))
-      )
 
       when(http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any, any)).thenReturn(
         Future.successful(Right(HttpResponse(
