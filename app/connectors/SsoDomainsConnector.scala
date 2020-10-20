@@ -20,7 +20,7 @@ import java.net.URL
 
 import config.AppConfig
 import javax.inject.{Inject, Singleton}
-import models.{DomainsResponse, WhiteListedDomains}
+import models.{DomainsResponse, PermittedDomains}
 import play.api.http.HeaderNames
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
@@ -37,14 +37,14 @@ class SsoDomainsConnector @Inject() (http: HttpClient, appConfig: AppConfig)(imp
 
   private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
-  implicit val whiteListedDomainsFormat: OFormat[WhiteListedDomains] = Json.format[WhiteListedDomains]
+  implicit val permittedDomainsFormat: OFormat[PermittedDomains] = Json.format[PermittedDomains]
 
   def getDomains()(implicit hc: HeaderCarrier): Future[DomainsResponse] = {
     http.GET[Either[UpstreamErrorResponse, HttpResponse]](s"$serviceUrl/sso/domains").map {
       case Left(err) => throw err
       case Right(response) =>
         DomainsResponse(
-          Json.parse(response.body).as[WhiteListedDomains],
+          Json.parse(response.body).as[PermittedDomains],
           getMaxAgeFrom(response.header(HeaderNames.CACHE_CONTROL)).getOrElse(DefaultTTL)
         )
     }

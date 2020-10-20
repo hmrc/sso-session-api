@@ -24,12 +24,12 @@ import uk.gov.hmrc.play.bootstrap.binders.{OnlyRelative, RedirectUrl, SafeRedire
 import scala.concurrent.Future
 
 @Singleton
-class ContinueUrlValidator @Inject() (whiteListService: WhiteListService) {
+class ContinueUrlValidator @Inject() (allowlistService: AllowlistService) {
 
-  def getRelativeOrAbsoluteWhiteListed(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
+  def getRelativeOrAbsolutePermitted(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
     continueUrl.getEither(OnlyRelative) match {
       case Left(_) =>
-        whiteListService.getWhitelistedAbsoluteUrl(continueUrl)
+        allowlistService.getPermittedAbsoluteUrl(continueUrl)
       case Right(safe) =>
         Future.successful(Some(safe))
     }

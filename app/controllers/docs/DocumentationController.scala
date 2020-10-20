@@ -26,10 +26,10 @@ import uk.gov.hmrc.play.bootstrap.controller.FrontendController
 class DocumentationController @Inject() (assets: Assets, config: Configuration, messagesControllerComponents: MessagesControllerComponents)
   extends FrontendController(messagesControllerComponents) {
 
-  private lazy val whitelist = config.getOptional[Seq[String]]("api.access.version-1.0.whitelistedApplicationIds").getOrElse(Nil)
+  private lazy val permitted = config.getOptional[Seq[String]]("api.access.version-1.0.permittedApplicationIds").getOrElse(Nil)
 
   def definition(): Action[AnyContent] = Action { _ =>
-    Ok(views.txt.definition(whitelist)).withHeaders(CONTENT_TYPE -> MimeTypes.JSON)
+    Ok(views.txt.definition(permitted)).withHeaders(CONTENT_TYPE -> MimeTypes.JSON)
   }
 
   def raml(version: String, file: String) = {
