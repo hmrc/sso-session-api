@@ -23,8 +23,7 @@ import models.ApiToken
 import play.api.libs.json.Json
 import play.mvc.Http.HeaderNames
 import uk.gov.hmrc.gg.test.UnitSpec
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 

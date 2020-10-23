@@ -19,19 +19,13 @@ package config
 import javax.inject.Inject
 import play.api.Configuration
 import uk.gov.hmrc.crypto.{Crypted, CryptoGCMWithKeysFromConfig, Decrypter, Encrypter, PlainBytes, PlainContent, PlainText}
-import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-class AppConfig @Inject() (configuration: Configuration, servicesConfig: ServicesConfig, runMode: RunMode) extends Decrypter with Encrypter {
+class AppConfig @Inject() (configuration: Configuration, servicesConfig: ServicesConfig) extends Decrypter with Encrypter {
 
-  lazy val analyticsHost: String = configuration.getOptional[String](s"${runMode.env}.google-analytics.host").getOrElse("service.gov.uk")
-  lazy val ssoFeHost: String = configuration.getOptional[String](s"${runMode.env}.sso-fe.host").getOrElse("")
+  lazy val ssoFeHost: String = configuration.getOptional[String]("sso-fe.host").getOrElse("")
 
-  lazy val appName: String = loadConfig("appName")
-  lazy val appUrl: String = loadConfig("appUrl")
-  lazy val authServiceUrl: String = servicesConfig.baseUrl("auth")
   lazy val ssoUrl: String = servicesConfig.baseUrl("sso")
-
-  private def loadConfig(key: String): String = configuration.get[String](key)
 
   val crypto = new CryptoGCMWithKeysFromConfig(baseConfigKey = "sso.encryption", configuration.underlying)
   override def decrypt(reversiblyEncrypted: Crypted): PlainText = crypto.decrypt(reversiblyEncrypted)

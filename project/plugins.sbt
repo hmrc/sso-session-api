@@ -5,7 +5,7 @@ resolvers += Resolver.url("HMRC Private Sbt Plugin Releases", url("https://artef
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.12")
 
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.6.24")
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.7.5")
 
 addSbtPlugin("uk.gov.hmrc" % "sbt-distributables" % "2.0.0")
 

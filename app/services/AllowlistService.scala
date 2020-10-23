@@ -17,7 +17,7 @@
 package services
 
 import javax.inject.{Inject, Singleton}
-import play.api.Logger
+import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl._
 import uk.gov.hmrc.play.bootstrap.binders.{AbsoluteWithHostnameFromWhitelist, RedirectUrl, SafeRedirectUrl}
@@ -25,7 +25,8 @@ import uk.gov.hmrc.play.bootstrap.binders.{AbsoluteWithHostnameFromWhitelist, Re
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(implicit val ec: ExecutionContext) {
+class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(implicit ec: ExecutionContext)
+  extends Logging {
 
   def getPermittedAbsoluteUrl(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
     cachedDomainService.getDomains.map {
@@ -33,7 +34,7 @@ class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(imp
         continueUrl.getEither(AbsoluteWithHostnameFromWhitelist(validDomains.allDomains)).toOption
 
       case None =>
-        Logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
+        logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
         None
     }
   }
