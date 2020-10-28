@@ -19,7 +19,7 @@ package services
 import connectors.SsoDomainsConnector
 import javax.inject.{Inject, Singleton}
 import models.DomainsResponse
-import play.api.Logger
+import play.api.Logging
 import play.api.cache.AsyncCacheApi
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class CachedDomainsService @Inject() (
     ssoDomainsConnector: SsoDomainsConnector,
     cache:               AsyncCacheApi
-)(implicit val ec: ExecutionContext) {
+)(implicit ec: ExecutionContext) extends Logging {
 
   private val CacheKey = "sso/domains"
 
@@ -44,7 +44,7 @@ class CachedDomainsService @Inject() (
           Some(domainsResponse)
         }.recover {
           case _: Exception =>
-            Logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
+            logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
             None
         }
     }

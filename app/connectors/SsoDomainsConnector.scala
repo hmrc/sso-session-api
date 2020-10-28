@@ -23,8 +23,7 @@ import javax.inject.{Inject, Singleton}
 import models.{DomainsResponse, PermittedDomains}
 import play.api.http.HeaderNames
 import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
 import scala.concurrent.{ExecutionContext, Future}

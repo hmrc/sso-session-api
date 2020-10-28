@@ -22,8 +22,7 @@ import org.scalatest.concurrent.ScalaFutures
 import play.api.http.HeaderNames
 import play.api.libs.json.Json
 import uk.gov.hmrc.gg.test.UnitSpec
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, UpstreamErrorResponse}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 

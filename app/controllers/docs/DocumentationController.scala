@@ -21,10 +21,10 @@ import javax.inject.Inject
 import play.api.Configuration
 import play.api.http.MimeTypes
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import uk.gov.hmrc.play.bootstrap.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
-class DocumentationController @Inject() (assets: Assets, config: Configuration, messagesControllerComponents: MessagesControllerComponents)
-  extends FrontendController(messagesControllerComponents) {
+class DocumentationController @Inject() (assets: Assets, config: Configuration, cc: MessagesControllerComponents)
+  extends FrontendController(cc) {
 
   private lazy val permitted = config.getOptional[Seq[String]]("api.access.version-1.0.permittedApplicationIds").getOrElse(Nil)
 

@@ -21,7 +21,7 @@ import play.api.libs.json.Json
 import play.api.mvc._
 import services.{ContinueUrlValidator, PermittedContinueUrl}
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
-import uk.gov.hmrc.play.bootstrap.controller.FrontendController
+import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
 import scala.concurrent.{ExecutionContext, Future}
 
