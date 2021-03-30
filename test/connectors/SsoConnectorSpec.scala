@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
 
     "on calling getTokenDetails, makes GET request to given url to obtain ApiToken" in new Setup {
       val mockUrlString = "http://mock-token-detail-request-url"
-      when(http.GET[ApiToken](eqTo(mockUrlString))(any, any, any)).thenReturn(Future.successful(
+      when(http.GET[ApiToken](eqTo(mockUrlString), any, any)(any, any, any)).thenReturn(Future.successful(
         token
       ))
       val apiToken = await(ssoConnector.getTokenDetails(new URL(mockUrlString))(HeaderCarrier()))
