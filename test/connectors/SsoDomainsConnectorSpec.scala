@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 HM Revenue & Customs
+ * Copyright 2021 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockPermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
+      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(Future.successful(
         Right(HttpResponse(
           200,
           json = Json.format[PermittedDomains].writes(mockPermittedDomains),
@@ -66,7 +66,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockPermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any)(any, any, any)).thenReturn(Future.successful(
+      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(Future.successful(
         Right(HttpResponse(
           200,
           json = Json.format[PermittedDomains].writes(mockPermittedDomains),
