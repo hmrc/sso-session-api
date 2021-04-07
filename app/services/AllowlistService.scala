@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package services
 
+import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl._
-import uk.gov.hmrc.play.bootstrap.binders.{AbsoluteWithHostnameFromAllowlist, RedirectUrl, SafeRedirectUrl}
+import uk.gov.hmrc.play.bootstrap.binders.{AbsoluteWithHostnameFromWhitelist, RedirectUrl, SafeRedirectUrl}
 
-import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -31,7 +31,7 @@ class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(imp
   def getPermittedAbsoluteUrl(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
     cachedDomainService.getDomains.map {
       case Some(validDomains) =>
-        continueUrl.getEither(AbsoluteWithHostnameFromAllowlist(validDomains.allDomains)).toOption
+        continueUrl.getEither(AbsoluteWithHostnameFromWhitelist(validDomains.allDomains)).toOption
 
       case None =>
         logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.{ContinueUrlValidator, PermittedContinueUrl}
 import uk.gov.hmrc.crypto.PlainText
-import uk.gov.hmrc.http.SessionId
+import uk.gov.hmrc.http.logging.SessionId
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, Upstream4xxResponse}
-import uk.gov.hmrc.play.http.HeaderCarrierConverter
+import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
@@ -46,7 +46,7 @@ class ApiTokenController @Inject() (
 )(implicit val ec: ExecutionContext) extends FrontendController(controllerComponents) with PermittedContinueUrl {
 
   def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
-    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
       .copy(sessionId = Some(SessionId(s"session-${UUID.randomUUID().toString}")))
 
     withPermittedContinueUrl(continueUrl) { permittedUrl =>
