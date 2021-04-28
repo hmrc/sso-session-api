@@ -18,10 +18,6 @@ lazy val microservice = Project("sso-session-api", file("."))
     unmanagedSourceDirectories in IntegrationTest := (baseDirectory in IntegrationTest) (base => Seq(base / "it")).value,
     addTestReportOption(IntegrationTest, "int-test-reports"),
     parallelExecution in IntegrationTest := false)
-  .settings(
-    resolvers += Resolver.bintrayRepo("hmrc", "releases"),
-    resolvers += "hmrc-releases" at "https://artefacts.tax.service.gov.uk/artifactory/hmrc-releases/"
-  )
   .settings(ScalariformSettings())
   .settings(ScoverageSettings())
   .settings(SilencerSettings())
