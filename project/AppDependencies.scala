@@ -8,9 +8,9 @@ private object AppDependencies {
     ehcache,
     // claims to be a frontend even though it's definitely a backend so it has access to `sso.encryption.key`,
     // and because it appears to need to set cookies
-    "uk.gov.hmrc" %% "bootstrap-frontend-play-27" % "4.1.0",
-    "uk.gov.hmrc" %% "government-gateway-domain" % "6.2.0-play-27",
-    "uk.gov.hmrc" %% "govuk-template" % "5.65.0-play-27"
+    "uk.gov.hmrc" %% "bootstrap-frontend-play-27" % "5.5.0",
+    "uk.gov.hmrc" %% "government-gateway-domain" % "6.3.0-play-27",
+    "uk.gov.hmrc" %% "govuk-template" % "5.69.0-play-27"
   )
 
   val test = Seq(
