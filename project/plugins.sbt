@@ -13,8 +13,6 @@ addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.3")
 
 addSbtPlugin("uk.gov.hmrc" % "sbt-auto-build" % "2.15.0")
 
-addSbtPlugin("uk.gov.hmrc" % "sbt-git-versioning" % "2.2.0")
+addSbtPlugin("uk.gov.hmrc" % "sbt-git-versioning" % "2.3.0")
 
-addSbtPlugin("uk.gov.hmrc" % "sbt-artifactory" % "1.13.0")
-
-addSbtPlugin("uk.gov.hmrc" % "sbt-settings" % "4.7.0")
+addSbtPlugin("uk.gov.hmrc" % "sbt-settings" % "4.9.0")

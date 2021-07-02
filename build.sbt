@@ -2,7 +2,7 @@ import uk.gov.hmrc.DefaultBuildSettings.{addTestReportOption, defaultSettings, s
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 
 lazy val microservice = Project("sso-session-api", file("."))
-  .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
+  .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin)
   .settings(majorVersion := 0)
   .settings(scalaSettings: _*)
   .settings(scalaVersion := "2.12.11")
@@ -10,7 +10,6 @@ lazy val microservice = Project("sso-session-api", file("."))
   .settings(publishingSettings: _*)
   .settings(defaultSettings(): _*)
   .settings(libraryDependencies ++= AppDependencies())
-  .settings(Repositories.playPublishingSettings: _*)
   .configs(IntegrationTest)
   .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
   .settings(
