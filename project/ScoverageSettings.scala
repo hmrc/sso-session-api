@@ -5,7 +5,7 @@ import scoverage.ScoverageKeys
 object ScoverageSettings {
   def apply() = Seq(
     ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;.*(config|views.*);.*(AuthService|BuildInfo|Routes).*",
-    ScoverageKeys.coverageMinimum := 60,
+    ScoverageKeys.coverageMinimumStmtTotal := 60,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
     parallelExecution in Test := false,
