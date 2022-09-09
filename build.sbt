@@ -5,7 +5,7 @@ lazy val microservice = Project("sso-session-api", file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
   .settings(majorVersion := 0)
   .settings(scalaSettings: _*)
-  .settings(scalaVersion := "2.12.15")
+  .settings(scalaVersion := "2.12.16")
   .settings(scalacOptions ++= Seq("-Xfatal-warnings", "-feature"))
   .settings(publishingSettings: _*)
   .settings(defaultSettings(): _*)
@@ -13,10 +13,10 @@ lazy val microservice = Project("sso-session-api", file("."))
   .configs(IntegrationTest)
   .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
   .settings(
-    Keys.fork in IntegrationTest := false,
-    unmanagedSourceDirectories in IntegrationTest := (baseDirectory in IntegrationTest) (base => Seq(base / "it")).value,
+      IntegrationTest / Keys.fork  := false,
+      IntegrationTest / unmanagedSourceDirectories := (IntegrationTest / baseDirectory) (base => Seq(base / "it")).value,
     addTestReportOption(IntegrationTest, "int-test-reports"),
-    parallelExecution in IntegrationTest := false)
+      IntegrationTest / parallelExecution := false)
   .settings(ScalariformSettings())
   .settings(ScoverageSettings())
   .settings(SilencerSettings())

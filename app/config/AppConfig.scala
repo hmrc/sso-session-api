@@ -18,7 +18,7 @@ package config
 
 import javax.inject.Inject
 import play.api.Configuration
-import uk.gov.hmrc.crypto.{Crypted, CryptoGCMWithKeysFromConfig, Decrypter, Encrypter, PlainBytes, PlainContent, PlainText}
+import uk.gov.hmrc.crypto.{Crypted, SymmetricCryptoFactory, Decrypter, Encrypter, PlainBytes, PlainContent, PlainText}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 class AppConfig @Inject() (configuration: Configuration, servicesConfig: ServicesConfig) extends Decrypter with Encrypter {
@@ -27,7 +27,7 @@ class AppConfig @Inject() (configuration: Configuration, servicesConfig: Service
 
   lazy val ssoUrl: String = servicesConfig.baseUrl("sso")
 
-  val crypto = new CryptoGCMWithKeysFromConfig(baseConfigKey = "sso.encryption", configuration.underlying)
+  val crypto = SymmetricCryptoFactory.aesGcmCryptoFromConfig(baseConfigKey = "sso.encryption", configuration.underlying)
   override def decrypt(reversiblyEncrypted: Crypted): PlainText = crypto.decrypt(reversiblyEncrypted)
   override def decryptAsBytes(reversiblyEncrypted: Crypted): PlainBytes = crypto.decryptAsBytes(reversiblyEncrypted)
   override def encrypt(plain: PlainContent): Crypted = crypto.encrypt(plain)
