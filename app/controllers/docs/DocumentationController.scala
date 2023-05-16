@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class DocumentationController @Inject() (assets: Assets, config: Configuration, 
     Ok(views.txt.definition(permitted)).withHeaders(CONTENT_TYPE -> MimeTypes.JSON)
   }
 
-  def raml(version: String, file: String) = {
+  def yaml(version: String, file: String) = {
     assets.at(s"/public/api/conf/$version", file)
   }
 }
