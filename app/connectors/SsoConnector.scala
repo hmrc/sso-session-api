@@ -41,7 +41,7 @@ class SsoConnector @Inject() (
   private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
   def createToken(tokenRequest: ApiToken)(implicit hc: HeaderCarrier): Future[URL] = {
-    val createTokensUrl = serviceUrl + "/sso/api-tokens"
+    val createTokensUrl = s"$serviceUrl/sso/api-tokens"
 
     for {
       response <- http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](createTokensUrl, tokenRequest).map {

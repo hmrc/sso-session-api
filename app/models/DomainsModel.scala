@@ -19,7 +19,7 @@ package models
 case class PermittedDomains(externalDomains: Set[String], internalDomains: Set[String])
 
 case class DomainsResponse(permittedDomains: PermittedDomains, maxAge: Int) {
-  val allDomains: Set[String] = permittedDomains.externalDomains ++ permittedDomains.internalDomains
+  val allDomains:      Set[String] = permittedDomains.externalDomains ++ permittedDomains.internalDomains
   val internalDomains: Set[String] = permittedDomains.internalDomains
   val externalDomains: Set[String] = permittedDomains.externalDomains
 }

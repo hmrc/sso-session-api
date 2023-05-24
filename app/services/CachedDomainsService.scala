@@ -40,7 +40,8 @@ class CachedDomainsService @Inject() (
       case Some(cachedDomainsResponse) =>
         Future.successful(Some(cachedDomainsResponse))
       case None =>
-        ssoDomainsConnector.getDomains
+        ssoDomainsConnector
+          .getDomains()
           .map { domainsResponse =>
             cache.set(CacheKey, domainsResponse, Duration(domainsResponse.maxAge, SECONDS))
             Some(domainsResponse)

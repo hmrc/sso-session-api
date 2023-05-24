@@ -18,18 +18,17 @@ package controllers
 
 import java.net.URL
 import java.util.UUID
-
 import audit.AuditingService
 import config._
 import connectors.SsoConnector
+
 import javax.inject.{Inject, Singleton}
 import models.ApiToken
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import services.{ContinueUrlValidator, PermittedContinueUrl}
 import uk.gov.hmrc.crypto.PlainText
-import uk.gov.hmrc.http.SessionId
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, Upstream4xxResponse}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, SessionId, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
@@ -73,9 +72,9 @@ class ApiTokenController @Inject() (
         )
       }
     }.recover {
-      case Upstream4xxResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq): _*)
-      case Upstream4xxResponse(_, FORBIDDEN, _, headers)    => Forbidden.withHeaders(unGroup(headers.toSeq): _*)
-      case Upstream4xxResponse(message, BAD_REQUEST, _, _)  => BadRequest(message)
+      case UpstreamErrorResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq): _*)
+      case UpstreamErrorResponse(_, FORBIDDEN, _, headers)    => Forbidden.withHeaders(unGroup(headers.toSeq): _*)
+      case UpstreamErrorResponse(message, BAD_REQUEST, _, _)  => BadRequest(message)
     }
   }
 

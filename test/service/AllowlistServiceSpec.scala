@@ -42,26 +42,26 @@ class AllowlistServiceSpec extends UnitSpec with ScalaFutures {
   "white list service" should {
 
     "return true for continueUrl with a valid internal hostname" in new Setup {
-      when(mockCachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
+      when(mockCachedDomainsService.getDomains()).thenReturn(Future.successful(Some(validDomains)))
       await(allowlistService.getPermittedAbsoluteUrl(RedirectUrl("https://www.validinternal.gov.uk"))) shouldBe Some(
         SafeRedirectUrl("https://www.validinternal.gov.uk")
       )
     }
 
     "return true for continueUrl with a valid external hostname" in new Setup {
-      when(mockCachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
+      when(mockCachedDomainsService.getDomains()).thenReturn(Future.successful(Some(validDomains)))
       await(allowlistService.getPermittedAbsoluteUrl(RedirectUrl("https://www.validexternal.com"))) shouldBe Some(
         SafeRedirectUrl("https://www.validexternal.com")
       )
     }
 
     "return false for continueUrl with hostname which is not a valid internal or external domain" in new Setup {
-      when(mockCachedDomainsService.getDomains).thenReturn(Future.successful(Some(validDomains)))
+      when(mockCachedDomainsService.getDomains()).thenReturn(Future.successful(Some(validDomains)))
       await(allowlistService.getPermittedAbsoluteUrl(RedirectUrl("https://www.phishing.com"))) shouldBe None
     }
 
     "return false is the list of valid domains is unavailable" in new Setup {
-      when(mockCachedDomainsService.getDomains).thenReturn(Future.successful(None))
+      when(mockCachedDomainsService.getDomains()).thenReturn(Future.successful(None))
       await(allowlistService.getPermittedAbsoluteUrl(RedirectUrl("https://www.validexternal.com"))) shouldBe None
     }
 
