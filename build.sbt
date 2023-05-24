@@ -17,7 +17,7 @@ lazy val microservice = Project("sso-session-api", file("."))
       IntegrationTest / unmanagedSourceDirectories := (IntegrationTest / baseDirectory) (base => Seq(base / "it")).value,
     addTestReportOption(IntegrationTest, "int-test-reports"),
       IntegrationTest / parallelExecution := false)
-  .settings(ScalariformSettings())
   .settings(ScoverageSettings())
   .settings(SilencerSettings())
   .settings(PlayKeys.playDefaultPort := 9551)
+  .settings(scalafmtOnCompile := true)

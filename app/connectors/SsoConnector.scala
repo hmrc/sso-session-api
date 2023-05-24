@@ -33,10 +33,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SsoConnector @Inject() (
-    http:      HttpClient,
-    appConfig: AppConfig
+  http:      HttpClient,
+  appConfig: AppConfig
 )(implicit val ec: ExecutionContext)
-  extends ApiJsonFormats {
+    extends ApiJsonFormats {
 
   private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
@@ -45,12 +45,14 @@ class SsoConnector @Inject() (
 
     for {
       response <- http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](createTokensUrl, tokenRequest).map {
-        case Right(response) => response
-        case Left(err)       => throw err
-      }
-      uri = response.header(HeaderNames.LOCATION).getOrElse(
-        throw new RuntimeException("Couldn't get a url from location header ")
-      )
+                    case Right(response) => response
+                    case Left(err)       => throw err
+                  }
+      uri = response
+              .header(HeaderNames.LOCATION)
+              .getOrElse(
+                throw new RuntimeException("Couldn't get a url from location header ")
+              )
     } yield new URL(serviceUrl, uri)
   }
 
@@ -64,10 +66,10 @@ case class SsoInSessionInfo(bearerToken: String, sessionId: String)
 trait ApiJsonFormats {
   implicit val tokenRequestRead: Format[ApiToken] = (
     (JsPath \ "bearer-token").format[String] and
-    (JsPath \ "session-id").format[String] and
-    (JsPath \ "continue-url").format[String] and
-    (JsPath \ "user-id").formatNullable[String]
-  ) (ApiToken.apply, unlift(ApiToken.unapply))
+      (JsPath \ "session-id").format[String] and
+      (JsPath \ "continue-url").format[String] and
+      (JsPath \ "user-id").formatNullable[String]
+  )(ApiToken.apply, unlift(ApiToken.unapply))
 
   implicit val ssoInSessionInfoRead: Reads[SsoInSessionInfo] = Json.reads[SsoInSessionInfo]
 

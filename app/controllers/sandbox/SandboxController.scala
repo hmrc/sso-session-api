@@ -27,20 +27,22 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SandboxController @Inject() (
-    val continueUrlValidator: ContinueUrlValidator,
-    controllerComponents:     MessagesControllerComponents
+  val continueUrlValidator: ContinueUrlValidator,
+  controllerComponents:     MessagesControllerComponents
 )(implicit val ec: ExecutionContext)
-  extends FrontendController(controllerComponents)
-  with PermittedContinueUrl {
+    extends FrontendController(controllerComponents)
+    with PermittedContinueUrl {
 
   def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
     withPermittedContinueUrl(continueUrl) { _ =>
       Future.successful(
-        Ok(Json.obj(
-          "_links" -> Json.obj(
-            "session" -> s"http://schema.org"
+        Ok(
+          Json.obj(
+            "_links" -> Json.obj(
+              "session" -> s"http://schema.org"
+            )
           )
-        ))
+        )
       )
     }
   }

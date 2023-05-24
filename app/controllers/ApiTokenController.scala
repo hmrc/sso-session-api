@@ -38,20 +38,23 @@ import scala.concurrent.ExecutionContext
 
 @Singleton
 class ApiTokenController @Inject() (
-    ssoConnector:             SsoConnector,
-    auditingService:          AuditingService,
-    frontendAppConfig:        AppConfig,
-    val continueUrlValidator: ContinueUrlValidator,
-    controllerComponents:     MessagesControllerComponents
-)(implicit val ec: ExecutionContext) extends FrontendController(controllerComponents) with PermittedContinueUrl {
+  ssoConnector:             SsoConnector,
+  auditingService:          AuditingService,
+  frontendAppConfig:        AppConfig,
+  val continueUrlValidator: ContinueUrlValidator,
+  controllerComponents:     MessagesControllerComponents
+)(implicit val ec: ExecutionContext)
+    extends FrontendController(controllerComponents)
+    with PermittedContinueUrl {
 
   def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
-    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter
+      .fromRequest(request)
       .copy(sessionId = Some(SessionId(s"session-${UUID.randomUUID().toString}")))
 
     withPermittedContinueUrl(continueUrl) { permittedUrl =>
       val maybeApiToken = for {
-        bearer <- hc.authorization
+        bearer    <- hc.authorization
         sessionId <- hc.sessionId
       } yield ApiToken(bearer.value, sessionId.value, permittedUrl.url, Some("deprecated"))
 
@@ -66,7 +69,8 @@ class ApiTokenController @Inject() (
             "_links" -> Json.obj(
               "session" -> redeemUrl(tokenUrl)
             )
-          ))
+          )
+        )
       }
     }.recover {
       case Upstream4xxResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq): _*)
@@ -82,7 +86,7 @@ class ApiTokenController @Inject() (
 
   private def unGroup[T, U](in: Seq[(T, Seq[U])]): Seq[(T, U)] = for {
     (key, values) <- in
-    value <- values
+    value         <- values
   } yield key -> value
 
 }

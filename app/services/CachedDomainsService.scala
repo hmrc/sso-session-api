@@ -28,9 +28,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class CachedDomainsService @Inject() (
-    ssoDomainsConnector: SsoDomainsConnector,
-    cache:               AsyncCacheApi
-)(implicit ec: ExecutionContext) extends Logging {
+  ssoDomainsConnector: SsoDomainsConnector,
+  cache:               AsyncCacheApi
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   private val CacheKey = "sso/domains"
 
@@ -39,14 +40,15 @@ class CachedDomainsService @Inject() (
       case Some(cachedDomainsResponse) =>
         Future.successful(Some(cachedDomainsResponse))
       case None =>
-        ssoDomainsConnector.getDomains.map { domainsResponse =>
-          cache.set(CacheKey, domainsResponse, Duration(domainsResponse.maxAge, SECONDS))
-          Some(domainsResponse)
-        }.recover {
-          case _: Exception =>
+        ssoDomainsConnector.getDomains
+          .map { domainsResponse =>
+            cache.set(CacheKey, domainsResponse, Duration(domainsResponse.maxAge, SECONDS))
+            Some(domainsResponse)
+          }
+          .recover { case _: Exception =>
             logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
             None
-        }
+          }
     }
   }
 }

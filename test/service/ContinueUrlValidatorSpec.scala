@@ -17,7 +17,7 @@
 package service
 
 import org.scalatest.concurrent.ScalaFutures
-import services.{ContinueUrlValidator, AllowlistService}
+import services.{AllowlistService, ContinueUrlValidator}
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}

@@ -23,8 +23,7 @@ import play.api.http.MimeTypes
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 
-class DocumentationController @Inject() (assets: Assets, config: Configuration, cc: MessagesControllerComponents)
-  extends FrontendController(cc) {
+class DocumentationController @Inject() (assets: Assets, config: Configuration, cc: MessagesControllerComponents) extends FrontendController(cc) {
 
   private lazy val permitted = config.getOptional[Seq[String]]("api.access.version-1.0.permittedApplicationIds").getOrElse(Nil)
 
@@ -32,7 +31,7 @@ class DocumentationController @Inject() (assets: Assets, config: Configuration, 
     Ok(views.txt.definition(permitted)).withHeaders(CONTENT_TYPE -> MimeTypes.JSON)
   }
 
-  def yaml(version: String, file: String) = {
+  def yaml(version: String, file: String): Action[AnyContent] = {
     assets.at(s"/public/api/conf/$version", file)
   }
 }

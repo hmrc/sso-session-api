@@ -25,8 +25,7 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(implicit ec: ExecutionContext)
-  extends Logging {
+class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(implicit ec: ExecutionContext) extends Logging {
 
   def getPermittedAbsoluteUrl(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
     cachedDomainService.getDomains.map {

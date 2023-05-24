@@ -12,12 +12,13 @@ class ApiControllerWireMockSpec extends BaseISpec {
       expectAuthorityRecordToBeFound()
       expectTokenToBeSuccessfullyCreated("/somewhere")
 
-      val response = await(resourceRequest("/web-session")
-        .withQueryStringParameters("continueUrl" -> "/somewhere")
-        .addHttpHeaders(HeaderNames.xSessionId -> sessionId)
-        .addHttpHeaders(HeaderNames.authorisation -> authToken)
-        .withFollowRedirects(false)
-        .get()
+      val response = await(
+        resourceRequest("/web-session")
+          .withQueryStringParameters("continueUrl" -> "/somewhere")
+          .addHttpHeaders(HeaderNames.xSessionId -> sessionId)
+          .addHttpHeaders(HeaderNames.authorisation -> authToken)
+          .withFollowRedirects(false)
+          .get()
       )
       response.status shouldBe OK
 
@@ -36,19 +37,29 @@ class ApiControllerWireMockSpec extends BaseISpec {
     val userId = "/auth/session/1"
 
     def expectAuthorityRecordToBeFound(): Unit = {
-      stubFor(get("/auth/authority").withHeader(HeaderNames.authorisation, equalTo(authToken))
-        .willReturn(okJson(Json.obj(
-          "uri" -> userId
-        ).toString)))
+      stubFor(
+        get("/auth/authority")
+          .withHeader(HeaderNames.authorisation, equalTo(authToken))
+          .willReturn(
+            okJson(
+              Json
+                .obj(
+                  "uri" -> userId
+                )
+                .toString
+            )
+          )
+      )
     }
 
     def expectTokenToBeSuccessfullyCreated(continueUrl: String): Unit = {
-      stubFor(post("/sso/api-tokens")
-        // the session ID is randomly generated, so the request body can't directly be matched
-        .withRequestBody(containing(s""""bearer-token":"$authToken""""))
-        .withRequestBody(containing(""""session-id":"""))
-        .withRequestBody(containing(s""""continue-url":"$continueUrl""""))
-        .willReturn(ok.withHeader(LOCATION, "/api-token-location"))
+      stubFor(
+        post("/sso/api-tokens")
+          // the session ID is randomly generated, so the request body can't directly be matched
+          .withRequestBody(containing(s""""bearer-token":"$authToken""""))
+          .withRequestBody(containing(""""session-id":"""))
+          .withRequestBody(containing(s""""continue-url":"$continueUrl""""))
+          .willReturn(ok.withHeader(LOCATION, "/api-token-location"))
       )
     }
   }

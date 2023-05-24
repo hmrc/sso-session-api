@@ -26,25 +26,26 @@ import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendHeaderCarrierProvi
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuditingService @Inject() (
-    auditConnector: AuditConnector
-)(implicit ec: ExecutionContext) extends FrontendHeaderCarrierProvider {
+  auditConnector: AuditConnector
+)(implicit ec: ExecutionContext)
+    extends FrontendHeaderCarrierProvider {
 
   def sendTokenCreatedEvent(continueUrl: String)(implicit request: Request[_]): Future[Unit] = {
     sendEvent(
       "api-sso-token-created",
       "api-sso-token-created",
       Map(
-        "continueUrl" -> continueUrl,
+        "continueUrl"  -> continueUrl,
         "bearer-token" -> hc.authorization.map(_.value).getOrElse("-"),
-        "session-id" -> hc.sessionId.map(_.value).getOrElse("-")
+        "session-id"   -> hc.sessionId.map(_.value).getOrElse("-")
       )
     )
   }
 
   private def sendEvent(
-      auditType:       String,
-      transactionName: String,
-      details:         Map[String, String]
+    auditType:       String,
+    transactionName: String,
+    details:         Map[String, String]
   )(implicit request: Request[_]): Future[Unit] = {
     val event = DataEvent(
       "sso-session-api",
