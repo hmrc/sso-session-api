@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,20 +40,20 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
       val dataEvent = dataEventCaptor.value
 
       dataEvent.auditSource shouldBe "sso-session-api"
-      dataEvent.auditType shouldBe "api-sso-token-created"
+      dataEvent.auditType   shouldBe "api-sso-token-created"
       dataEvent.tags shouldBe Map(
-        "clientIP" -> clientIp,
-        "path" -> fakeRequestWithHeaders.path,
-        HeaderNames.xSessionId -> sessionId,
+        "clientIP"                   -> clientIp,
+        "path"                       -> fakeRequestWithHeaders.path,
+        HeaderNames.xSessionId       -> sessionId,
         HeaderNames.akamaiReputation -> clientReputation,
-        HeaderNames.xRequestId -> requestId,
-        HeaderNames.deviceID -> deviceId,
-        "clientPort" -> clientPort,
-        "transactionName" -> "api-sso-token-created"
+        HeaderNames.xRequestId       -> requestId,
+        HeaderNames.deviceID         -> deviceId,
+        "clientPort"                 -> clientPort,
+        "transactionName"            -> "api-sso-token-created"
       )
       dataEvent.detail shouldBe Map(
-        "continueUrl" -> redirectUrl,
-        "session-id" -> sessionId,
+        "continueUrl"  -> redirectUrl,
+        "session-id"   -> sessionId,
         "bearer-token" -> authToken
       )
     }

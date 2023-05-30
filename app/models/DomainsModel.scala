@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@ package models
 case class PermittedDomains(externalDomains: Set[String], internalDomains: Set[String])
 
 case class DomainsResponse(permittedDomains: PermittedDomains, maxAge: Int) {
-  val allDomains = permittedDomains.externalDomains ++ permittedDomains.internalDomains
-  val internalDomains = permittedDomains.internalDomains
-  val externalDomains = permittedDomains.externalDomains
+  val allDomains:      Set[String] = permittedDomains.externalDomains ++ permittedDomains.internalDomains
+  val internalDomains: Set[String] = permittedDomains.internalDomains
+  val externalDomains: Set[String] = permittedDomains.externalDomains
 }
-

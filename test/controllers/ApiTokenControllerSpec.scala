@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
     val userId = "/auth/oid/1234"
 
     val createRequestWithSessionIdAndBearerToken = FakeRequest().withHeaders(
-      HmrcHeaderNames.xSessionId -> sessionId,
+      HmrcHeaderNames.xSessionId    -> sessionId,
       HmrcHeaderNames.authorisation -> bearerToken
     )
 
@@ -72,7 +72,8 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
   "create" should {
 
     "respond with 200 and encrypted token in message" in new Setup {
-      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any)).thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
+      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
+        .thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
       when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
 
       val tokenUrl = new URL("http://sso.service/tokenId/1234")
@@ -94,7 +95,8 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
     }
 
     "respond with 200 if no session-id provided" in new Setup {
-      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any)).thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
+      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
+        .thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
       when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
       when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
 

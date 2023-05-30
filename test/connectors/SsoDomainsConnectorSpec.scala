@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,13 +42,17 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockPermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(Future.successful(
-        Right(HttpResponse(
-          200,
-          json = Json.format[PermittedDomains].writes(mockPermittedDomains),
-          Map(HeaderNames.CACHE_CONTROL -> Seq("max-age=33")),
-        ))
-      ))
+      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(
+        Future.successful(
+          Right(
+            HttpResponse(
+              200,
+              json = Json.format[PermittedDomains].writes(mockPermittedDomains),
+              Map(HeaderNames.CACHE_CONTROL -> Seq("max-age=33"))
+            )
+          )
+        )
+      )
 
       val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
 
@@ -56,7 +60,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
         case DomainsResponse(PermittedDomains(extDomains, intDomains), maxAge) => {
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
-          maxAge shouldBe 33
+          maxAge                shouldBe 33
         }
         case _ => fail("PermittedDomains expected")
       }
@@ -66,13 +70,17 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockPermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(Future.successful(
-        Right(HttpResponse(
-          200,
-          json = Json.format[PermittedDomains].writes(mockPermittedDomains),
-          Map.empty,
-        ))
-      ))
+      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(
+        Future.successful(
+          Right(
+            HttpResponse(
+              200,
+              json = Json.format[PermittedDomains].writes(mockPermittedDomains),
+              Map.empty
+            )
+          )
+        )
+      )
 
       val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
 
@@ -80,7 +88,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
         case DomainsResponse(PermittedDomains(extDomains, intDomains), maxAge) => {
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
-          maxAge shouldBe 60
+          maxAge                shouldBe 60
         }
         case _ => fail("PermittedDomains expected")
       }
@@ -89,4 +97,3 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
   }
 
 }
-

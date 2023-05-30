@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class CachedDomainsService @Inject() (
-    ssoDomainsConnector: SsoDomainsConnector,
-    cache:               AsyncCacheApi
-)(implicit ec: ExecutionContext) extends Logging {
+  ssoDomainsConnector: SsoDomainsConnector,
+  cache:               AsyncCacheApi
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   private val CacheKey = "sso/domains"
 
@@ -39,14 +40,16 @@ class CachedDomainsService @Inject() (
       case Some(cachedDomainsResponse) =>
         Future.successful(Some(cachedDomainsResponse))
       case None =>
-        ssoDomainsConnector.getDomains.map { domainsResponse =>
-          cache.set(CacheKey, domainsResponse, Duration(domainsResponse.maxAge, SECONDS))
-          Some(domainsResponse)
-        }.recover {
-          case _: Exception =>
+        ssoDomainsConnector
+          .getDomains()
+          .map { domainsResponse =>
+            cache.set(CacheKey, domainsResponse, Duration(domainsResponse.maxAge, SECONDS))
+            Some(domainsResponse)
+          }
+          .recover { case _: Exception =>
             logger.warn("List of valid domains is unavailable (the domains service may be down). Defaulting to not valid.")
             None
-        }
+          }
     }
   }
 }

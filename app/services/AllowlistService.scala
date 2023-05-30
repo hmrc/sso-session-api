@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,10 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(implicit ec: ExecutionContext)
-  extends Logging {
+class AllowlistService @Inject() (cachedDomainService: CachedDomainsService)(implicit ec: ExecutionContext) extends Logging {
 
   def getPermittedAbsoluteUrl(continueUrl: RedirectUrl)(implicit hc: HeaderCarrier): Future[Option[SafeRedirectUrl]] = {
-    cachedDomainService.getDomains.map {
+    cachedDomainService.getDomains().map {
       case Some(validDomains) =>
         continueUrl.getEither(AbsoluteWithHostnameFromAllowlist(validDomains.allDomains)).toOption
 

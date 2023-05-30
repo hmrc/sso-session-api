@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.libs.json._
 import play.api.mvc.MessagesControllerComponents
 import play.api.test.{FakeRequest, Injecting}
-import services.{ContinueUrlValidator, AllowlistService}
+import services.{AllowlistService, ContinueUrlValidator}
 import uk.gov.hmrc.gg.test.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
@@ -50,7 +50,7 @@ class SandboxControllerSpec extends UnitSpec with GuiceOneAppPerSuite with Injec
       val controller = new SandboxController(succeedingValidator, messagesControllerComponents)(ExecutionContext.global)
       val result = controller.create(continueUrl)(FakeRequest())
 
-      status(result) shouldBe OK
+      status(result)                               shouldBe OK
       contentAsJson(result) \ "_links" \ "session" shouldBe JsDefined(JsString(s"http://schema.org"))
     }
 
@@ -59,7 +59,7 @@ class SandboxControllerSpec extends UnitSpec with GuiceOneAppPerSuite with Injec
       val controller = new SandboxController(failingValidator, messagesControllerComponents)(ExecutionContext.global)
       val result = controller.create(RedirectUrl("/a"))(FakeRequest())
 
-      status(result) shouldBe BAD_REQUEST
+      status(result)          shouldBe BAD_REQUEST
       contentAsString(result) shouldBe "Invalid Continue URL"
     }
   }

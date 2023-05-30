@@ -1,0 +1,97 @@
+openapi: 3.0.0
+
+info:
+  title: Web Session
+  contact: {}
+  version: '1.0'
+
+servers:
+- url: https://api.service.hmrc.gov.uk/
+  variables: {}
+
+paths:
+  /web-session/sso-api/web-session:
+    get:
+      tags:
+      - web-session
+      summary: Get web session
+      description: This endpoint gets a link to a web-session for the current API user.
+      operationId: Getwebsession
+      parameters:
+      - name: continueUrl
+        in: query
+        description: The url you want to access in the browser session. it must not contain a host.
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: /tax-credits/doo/dar
+      responses:
+        '200':
+          description: ''
+          headers: {}
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/WebSessionSsoApiWebSessionresponse'
+                - example:
+                    _links:
+                      session: http:www.tax.service.gov.uk/sso/session?token=xyz
+              examples:
+                example-1:
+                  value:
+                    _links:
+                      session: http:www.tax.service.gov.uk/sso/session?token=xyz
+      deprecated: false
+      security:
+        - userRestricted:
+            - "read:web-session"
+components:
+  securitySchemes:
+    userRestricted:
+      type: oauth2
+      description: |
+        HMRC supports OAuth 2.0 for authenticating user restricted API requests using an OAuth 2.0 Bearer Token in the AUTHORIZATION header.
+        See https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints for details.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://api.service.hmrc.gov.uk/oauth/authorize
+          tokenUrl: https://api.service.hmrc.gov.uk/oauth/token
+          refreshUrl: https://api.service.hmrc.gov.uk/oauth/refresh
+          scopes:
+            "read:web-session": Provides web/browser access to an API user
+  schemas:
+    errorResponse:
+      title: errorResponse
+      required:
+      - code
+      type: object
+      properties:
+        code:
+          type: string
+    Links:
+      title: Links
+      required:
+      - session
+      type: object
+      properties:
+        session:
+          type: string
+      example:
+        session: http:www.tax.service.gov.uk/sso/session?token=xyz
+    WebSessionSsoApiWebSessionresponse:
+      title: WebSessionSsoApiWebSessionresponse
+      required:
+      - _links
+      type: object
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+      example:
+        _links:
+          session: http:www.tax.service.gov.uk/sso/session?token=xyz
+tags:
+- name: web-session
+  description: ''

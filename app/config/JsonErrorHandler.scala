@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 HM Revenue & Customs
+ * Copyright 2023 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,12 @@ import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendHeaderCarrierProvi
 import scala.concurrent.{ExecutionContext, Future}
 
 class JsonErrorHandler @Inject() (
-    auditConnector: AuditConnector,
-    httpAuditEvent: HttpAuditEvent
+  auditConnector: AuditConnector,
+  httpAuditEvent: HttpAuditEvent
 )(implicit ec: ExecutionContext)
-  extends HttpErrorHandler
-  with FrontendHeaderCarrierProvider
-  with Logging {
+    extends HttpErrorHandler
+    with FrontendHeaderCarrierProvider
+    with Logging {
 
   import httpAuditEvent.dataEvent
 
@@ -86,7 +86,7 @@ class JsonErrorHandler @Inject() (
       case _: NotFoundException      => "ResourceNotFound"
       case _: AuthorisationException => "ClientError"
       case _: JsValidationException  => "ServerValidationError"
-      case _                         => "ServerInternalError"
+      case _ => "ServerInternalError"
     }
 
     val errorResponse = ex match {
@@ -116,10 +116,10 @@ class JsonErrorHandler @Inject() (
   }
 
   case class ErrorResponse(
-      statusCode:  Int,
-      message:     String,
-      xStatusCode: Option[String] = None,
-      requested:   Option[String] = None
+    statusCode:  Int,
+    message:     String,
+    xStatusCode: Option[String] = None,
+    requested:   Option[String] = None
   )
 
   object ErrorResponse {

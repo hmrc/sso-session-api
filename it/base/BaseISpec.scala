@@ -21,7 +21,7 @@ trait BaseISpec extends WireMockSpec with Injecting {
 
     applicationCrypto.SessionCookieCrypto.decrypt(Crypted(mdtpSessionCookieValue)) match {
       case PlainText(v) => cookieBaker.decode(v)
-      case _ => Map.empty
+      case _            => Map.empty
     }
   }
 }
