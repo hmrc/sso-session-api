@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import audit.AuditingService
 import org.mockito.captor.ArgCaptor
 import org.scalatest.BeforeAndAfterEach
 import play.api.test.FakeRequest
-import uk.gov.hmrc.gg.test.UnitSpec
+import support.UnitSpec
 import uk.gov.hmrc.http.{HeaderNames, SessionKeys}
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.DataEvent

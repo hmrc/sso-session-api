@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package service
 import models.{DomainsResponse, PermittedDomains}
 import org.scalatest.concurrent.ScalaFutures
 import services.{AllowlistService, CachedDomainsService}
-import uk.gov.hmrc.gg.test.UnitSpec
+import support.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 

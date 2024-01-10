@@ -1,23 +1,24 @@
-import uk.gov.hmrc.DefaultBuildSettings.{addTestReportOption, defaultSettings, scalaSettings}
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
+import uk.gov.hmrc.DefaultBuildSettings
 
-lazy val microservice = Project("sso-session-api", file("."))
+val appName = "sso-session-api"
+
+ThisBuild / majorVersion := 0
+ThisBuild / scalaVersion := "2.13.12"
+
+lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
-  .settings(majorVersion := 0)
-  .settings(scalaSettings: _*)
-  .settings(scalaVersion := "2.13.8")
-  .settings(scalacOptions ++= Seq("-Xfatal-warnings", "-feature"))
-  .settings(publishingSettings: _*)
-  .settings(defaultSettings(): _*)
-  .settings(libraryDependencies ++= AppDependencies())
-  .configs(IntegrationTest)
-  .settings(inConfig(IntegrationTest)(Defaults.itSettings): _*)
+  .settings(DefaultBuildSettings.scalaSettings: _*)
+  .settings(DefaultBuildSettings.defaultSettings(): _*)
   .settings(
-      IntegrationTest / Keys.fork  := false,
-      IntegrationTest / unmanagedSourceDirectories := (IntegrationTest / baseDirectory) (base => Seq(base / "it")).value,
-    addTestReportOption(IntegrationTest, "int-test-reports"),
-      IntegrationTest / parallelExecution := false)
+    scalacOptions += "-Wconf:cat=unused-imports&src=html/.*:s",
+    scalacOptions += "-Wconf:src=routes/.*:s"
+  )
+  .settings(libraryDependencies ++= AppDependencies())
   .settings(ScoverageSettings())
-  .settings(SilencerSettings())
   .settings(PlayKeys.playDefaultPort := 9551)
   .settings(scalafmtOnCompile := true)
+
+lazy val it = project
+  .enablePlugins(PlayScala)
+  .dependsOn(microservice % "test->test") // the "test->test" allows reusing test code and test dependencies
+  .settings(DefaultBuildSettings.itSettings())
