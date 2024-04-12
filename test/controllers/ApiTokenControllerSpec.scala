@@ -17,14 +17,13 @@
 package controllers
 
 import java.net.URL
-
 import audit.AuditingService
 import config._
 import connectors.SsoConnector
 import org.apache.commons.codec.binary.Base64
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.mvc.MessagesControllerComponents
+import play.api.mvc.{AnyContentAsEmpty, MessagesControllerComponents, Result}
 import play.api.test.FakeRequest
 import services.ContinueUrlValidator
 import uk.gov.hmrc.crypto._
@@ -38,26 +37,26 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
   trait Setup {
     val ssoFeHost = "ssoFeHost"
-    val continueUrl = RedirectUrl("/somewhere")
+    val continueUrl: RedirectUrl = RedirectUrl("/somewhere")
     val absoluteUrlPath = "http://domain:1234/somewhere"
     private val encryptedCorrectTokenId = "encryptedTokenId"
-    val encodedCorrectToken = Base64.encodeBase64String(encryptedCorrectTokenId.getBytes("UTF-8"))
+    val encodedCorrectToken: String = Base64.encodeBase64String(encryptedCorrectTokenId.getBytes("UTF-8"))
     private val encryptedMissingTokenId = "encryptedMissingTokenId"
-    val encodedMissingToken = Base64.encodeBase64String(encryptedMissingTokenId.getBytes("UTF-8"))
+    val encodedMissingToken: String = Base64.encodeBase64String(encryptedMissingTokenId.getBytes("UTF-8"))
 
     val bearerToken = "bearer token=="
     val sessionId = "session-id"
     val userId = "/auth/oid/1234"
 
-    val createRequestWithSessionIdAndBearerToken = FakeRequest().withHeaders(
+    val createRequestWithSessionIdAndBearerToken: FakeRequest[AnyContentAsEmpty.type] = FakeRequest().withHeaders(
       HmrcHeaderNames.xSessionId    -> sessionId,
       HmrcHeaderNames.authorisation -> bearerToken
     )
 
-    val mockAppConfig = mock[AppConfig]
-    val mockSsoConnector = mock[SsoConnector]
-    val mockAuditingService = mock[AuditingService]
-    val mockContinueUrlValidator = mock[ContinueUrlValidator]
+    val mockAppConfig:                AppConfig = mock[AppConfig]
+    val mockSsoConnector:             SsoConnector = mock[SsoConnector]
+    val mockAuditingService:          AuditingService = mock[AuditingService]
+    val mockContinueUrlValidator:     ContinueUrlValidator = mock[ContinueUrlValidator]
     val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
 
     val apiTokenController = new ApiTokenController(
@@ -80,15 +79,15 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
       when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
 
-      val cryptedTokenUrl = mock[Crypted]
+      val cryptedTokenUrl: Crypted = mock[Crypted]
       when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
       when(cryptedTokenUrl.toBase64).thenReturn(encodedCorrectToken.getBytes())
 
-      val result = apiTokenController.create(continueUrl)(createRequestWithSessionIdAndBearerToken)
+      val result: Future[Result] = apiTokenController.create(continueUrl)(createRequestWithSessionIdAndBearerToken)
 
       status(result) shouldBe 200
 
-      val sessionLink = (contentAsJson(result) \ "_links" \ "session").as[String]
+      val sessionLink: String = (contentAsJson(result) \ "_links" \ "session").as[String]
       sessionLink shouldBe (ssoFeHost + s"/sso/session?token=$encodedCorrectToken")
 
       verify(mockAuditingService).sendTokenCreatedEvent(eqTo(continueUrl.unsafeValue))(any)
@@ -103,11 +102,11 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       val tokenUrl = new URL("http://sso.service/tokenId/1234")
       when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
 
-      val cryptedTokenUrl = mock[Crypted]
+      val cryptedTokenUrl: Crypted = mock[Crypted]
       when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
       when(cryptedTokenUrl.toBase64).thenReturn(encodedCorrectToken.getBytes())
 
-      val result = apiTokenController.create(continueUrl)(FakeRequest().withHeaders(HmrcHeaderNames.authorisation -> bearerToken))
+      val result: Future[Result] = apiTokenController.create(continueUrl)(FakeRequest().withHeaders(HmrcHeaderNames.authorisation -> bearerToken))
 
       status(result) shouldBe 200
     }

@@ -19,6 +19,7 @@ package controllers
 import base.BaseISpec
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json
+import play.api.libs.ws.WSResponse
 import uk.gov.hmrc.http.HeaderNames
 
 class ApiControllerWireMockSpec extends BaseISpec {
@@ -28,7 +29,7 @@ class ApiControllerWireMockSpec extends BaseISpec {
       expectAuthorityRecordToBeFound()
       expectTokenToBeSuccessfullyCreated("/somewhere")
 
-      val response = await(
+      val response: WSResponse = await(
         resourceRequest("/web-session")
           .withQueryStringParameters("continueUrl" -> "/somewhere")
           .addHttpHeaders(HeaderNames.xSessionId -> sessionId)
@@ -38,10 +39,10 @@ class ApiControllerWireMockSpec extends BaseISpec {
       )
       response.status shouldBe OK
 
-      val deviceIdCookie1 = response.cookie("mdtpdi").get.value
+      val deviceIdCookie1: String = response.cookie("mdtpdi").get.value
       deviceIdCookie1 should not be empty
 
-      val redeemTokenUrl = (response.json \ "_links" \ "session").as[String]
+      val redeemTokenUrl: String = (response.json \ "_links" \ "session").as[String]
       redeemTokenUrl should include("/sso/session?token=")
     }
   }

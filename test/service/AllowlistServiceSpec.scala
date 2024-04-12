@@ -28,14 +28,14 @@ import scala.concurrent.{ExecutionContext, Future}
 class AllowlistServiceSpec extends UnitSpec with ScalaFutures {
 
   trait Setup {
-    implicit val hc = HeaderCarrier()
+    implicit val hc: HeaderCarrier = HeaderCarrier()
 
-    val validDomains = DomainsResponse(
+    val validDomains: DomainsResponse = DomainsResponse(
       PermittedDomains(externalDomains = Set("www.validexternal.com", "another-valid-domain.com"), internalDomains = Set("www.validinternal.gov.uk")),
       60
     )
 
-    val mockCachedDomainsService = mock[CachedDomainsService]
+    val mockCachedDomainsService: CachedDomainsService = mock[CachedDomainsService]
     val allowlistService = new AllowlistService(mockCachedDomainsService)(ExecutionContext.global)
   }
 

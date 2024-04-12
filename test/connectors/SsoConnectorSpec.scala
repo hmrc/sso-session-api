@@ -31,11 +31,11 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
 
   trait Setup {
     val affordanceUri = "/affordance-uri"
-    val http = mock[HttpClient]
+    val http: HttpClient = mock[HttpClient]
     val serviceBaseURL = "http://mockbaseurl:1234"
-    val token = ApiToken("mockBearerToken", "mockSessionID", "mockContinueURL", None)
-    val ssnInfo = SsoInSessionInfo("bearerToken", "sessionID")
-    val mockAppConfig = mock[AppConfig]
+    val token:         ApiToken = ApiToken("mockBearerToken", "mockSessionID", "mockContinueURL", None)
+    val ssnInfo:       SsoInSessionInfo = SsoInSessionInfo("bearerToken", "sessionID")
+    val mockAppConfig: AppConfig = mock[AppConfig]
 
     val ssoConnector = new SsoConnector(http, mockAppConfig)(ExecutionContext.global)
   }
@@ -56,7 +56,7 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
           )
         )
       )
-      val futureUrl = ssoConnector.createToken(token)(HeaderCarrier())
+      val futureUrl: Future[URL] = ssoConnector.createToken(token)(HeaderCarrier())
       await(futureUrl) shouldBe new URL("http://mock-create-token-response-url")
 
     }
@@ -88,7 +88,7 @@ class SsoConnectorSpec extends UnitSpec with ApiJsonFormats {
           token
         )
       )
-      val apiToken = await(ssoConnector.getTokenDetails(new URL(mockUrlString))(HeaderCarrier()))
+      val apiToken: ApiToken = await(ssoConnector.getTokenDetails(new URL(mockUrlString))(HeaderCarrier()))
       apiToken shouldBe token
     }
   }

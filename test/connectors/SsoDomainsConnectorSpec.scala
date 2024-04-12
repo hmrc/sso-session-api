@@ -29,9 +29,9 @@ import scala.concurrent.{ExecutionContext, Future}
 class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
 
   trait Setup {
-    val mockHttp = mock[HttpClient]
+    val mockHttp: HttpClient = mock[HttpClient]
     val serviceBaseURL = "http://mockbaseurl:1234"
-    val mockAppConfig = mock[AppConfig]
+    val mockAppConfig: AppConfig = mock[AppConfig]
 
     val ssoDomainsConnector = new SsoDomainsConnector(mockHttp, mockAppConfig)(ExecutionContext.global)
   }
@@ -40,7 +40,7 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
 
     "return Future[DomainsResponse] and max-age value when getDomains() is called" in new Setup {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
-      val mockPermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
+      val mockPermittedDomains: PermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
       when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(
         Future.successful(
@@ -54,21 +54,20 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
         )
       )
 
-      val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
+      val domains: DomainsResponse = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
 
       domains match {
-        case DomainsResponse(PermittedDomains(extDomains, intDomains), maxAge) => {
+        case DomainsResponse(PermittedDomains(extDomains, intDomains), maxAge) =>
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
           maxAge                shouldBe 33
-        }
         case _ => fail("PermittedDomains expected")
       }
     }
 
     "return Future[DomainsResponse] and default max-age value when getDomains() is called where no max-age header in http response" in new Setup {
       when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
-      val mockPermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
+      val mockPermittedDomains: PermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
       when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(
         Future.successful(
@@ -82,14 +81,13 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
         )
       )
 
-      val domains = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
+      val domains: DomainsResponse = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
 
       domains match {
-        case DomainsResponse(PermittedDomains(extDomains, intDomains), maxAge) => {
+        case DomainsResponse(PermittedDomains(extDomains, intDomains), maxAge) =>
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
           maxAge                shouldBe 60
-        }
         case _ => fail("PermittedDomains expected")
       }
     }
