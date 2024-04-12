@@ -7,10 +7,11 @@ ThisBuild / scalaVersion := "2.13.12"
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
-  .settings(DefaultBuildSettings.scalaSettings: _*)
-  .settings(DefaultBuildSettings.defaultSettings(): _*)
+  .settings(DefaultBuildSettings.scalaSettings *)
+  .settings(DefaultBuildSettings.defaultSettings() *)
   .settings(
     scalacOptions += "-Wconf:cat=unused-imports&src=html/.*:s",
+    scalacOptions += "-Wconf:cat=unused-imports&src=routes/.*:s",
     scalacOptions += "-Wconf:src=routes/.*:s"
   )
   .settings(libraryDependencies ++= AppDependencies())
