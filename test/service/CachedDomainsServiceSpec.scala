@@ -29,13 +29,13 @@ import scala.concurrent.{ExecutionContext, Future}
 class CachedDomainsServiceSpec extends UnitSpec {
 
   trait Setup {
-    val mockSsoDomainsConnector = mock[SsoDomainsConnector]
-    val mockCache = mock[AsyncCacheApi]
+    val mockSsoDomainsConnector: SsoDomainsConnector = mock[SsoDomainsConnector]
+    val mockCache:               AsyncCacheApi = mock[AsyncCacheApi]
 
-    val domainsFromRealSSO = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 123)
-    val ssoResponseWithSuggestedTTL = (domainsFromRealSSO, Some("max-age=123"))
-    val ssoResponseWithNoTTL = (domainsFromRealSSO, None)
-    val cachedDomains = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 0)
+    val domainsFromRealSSO:          DomainsResponse = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 123)
+    val ssoResponseWithSuggestedTTL: (DomainsResponse, Some[String]) = (domainsFromRealSSO, Some("max-age=123"))
+    val ssoResponseWithNoTTL:        (DomainsResponse, None.type) = (domainsFromRealSSO, None)
+    val cachedDomains:               DomainsResponse = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 0)
 
     val cachedDomainsService = new CachedDomainsService(mockSsoDomainsConnector, mockCache)(ExecutionContext.global)
   }

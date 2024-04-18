@@ -28,7 +28,7 @@ trait BaseISpec extends WireMockSpec with Injecting {
     "Test.microservice.services.service-locator.enabled" -> false
   )
 
-  val config = app.injector.instanceOf[Configuration]
+  val config: Configuration = app.injector.instanceOf[Configuration]
 
   private val cookieBaker = inject[SessionCookieBaker]
 

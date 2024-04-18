@@ -40,7 +40,7 @@ class ContinueUrlValidatorSpec extends UnitSpec with ScalaFutures {
     }
 
     "return a SafeRedirectUrl if continueUrl is absolute whitelisted" in new Setup {
-      val url = RedirectUrl("http://absolute/whitelisted")
+      val url: RedirectUrl = RedirectUrl("http://absolute/whitelisted")
       when(mockAllowlistService.getPermittedAbsoluteUrl(eqTo(url))(*))
         .thenReturn(Future.successful(Some(SafeRedirectUrl("http://absolute/whitelisted"))))
 
@@ -48,7 +48,7 @@ class ContinueUrlValidatorSpec extends UnitSpec with ScalaFutures {
     }
 
     "return None if continueUrl is not relative or absolute whitelisted" in new Setup {
-      val url = RedirectUrl("http://not-relative-or-absolute-whitelisted")
+      val url: RedirectUrl = RedirectUrl("http://not-relative-or-absolute-whitelisted")
       when(mockAllowlistService.getPermittedAbsoluteUrl(eqTo(url))(*))
         .thenReturn(Future.successful(None))
 

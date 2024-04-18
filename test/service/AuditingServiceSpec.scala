@@ -17,8 +17,9 @@
 package service
 
 import audit.AuditingService
-import org.mockito.captor.ArgCaptor
+import org.mockito.captor.{ArgCaptor, Captor}
 import org.scalatest.BeforeAndAfterEach
+import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import support.UnitSpec
 import uk.gov.hmrc.http.{HeaderNames, SessionKeys}
@@ -35,9 +36,9 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
 
       await(service.sendTokenCreatedEvent(redirectUrl)(fakeRequestWithHeaders))
 
-      val dataEventCaptor = ArgCaptor[DataEvent]
+      val dataEventCaptor: Captor[DataEvent] = ArgCaptor[DataEvent]
       verify(mockAuditConnector).sendEvent(dataEventCaptor.capture)(any, any)
-      val dataEvent = dataEventCaptor.value
+      val dataEvent: DataEvent = dataEventCaptor.value
 
       dataEvent.auditSource shouldBe "sso-session-api"
       dataEvent.auditType   shouldBe "api-sso-token-created"
@@ -69,7 +70,7 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
     val sessionId = "sessionId"
     val authToken = "authToken"
 
-    val fakeRequestWithHeaders = FakeRequest()
+    val fakeRequestWithHeaders: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
       .withHeaders(HeaderNames.trueClientIp -> clientIp)
       .withHeaders(HeaderNames.trueClientPort -> clientPort)
       .withHeaders(HeaderNames.akamaiReputation -> clientReputation)
@@ -78,7 +79,7 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
       .withSession(SessionKeys.sessionId -> sessionId)
       .withSession(SessionKeys.authToken -> authToken)
 
-    val mockAuditConnector = mock[AuditConnector]
+    val mockAuditConnector: AuditConnector = mock[AuditConnector]
     when(mockAuditConnector.sendEvent(any)(any, any)).thenReturn(Future.successful(AuditResult.Disabled))
 
     val service = new AuditingService(mockAuditConnector)(ExecutionContext.global)
