@@ -1,6 +1,8 @@
 # sso-session-api
 
-Micro service providing SSO functionality between the portal and the MDTP platform.
+This microservice is part of the SSO journey between the API platform and the web.
+An API authorised user requests SSO via sso-session-api (Web Session API), they are returned a link to sso-frontend which when requested redirects to the desired mdtp page with a valid web session cookie.
+
 
 | Path                                                | Methods | Description                                                                       |
 |:----------------------------------------------------|:--------|:----------------------------------------------------------------------------------|
