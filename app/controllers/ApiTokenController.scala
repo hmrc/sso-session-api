@@ -19,7 +19,7 @@ package controllers
 import java.net.URL
 import java.util.UUID
 import audit.AuditingService
-import config._
+import config.*
 import connectors.SsoConnector
 
 import javax.inject.{Inject, Singleton}
@@ -37,11 +37,11 @@ import scala.concurrent.ExecutionContext
 
 @Singleton
 class ApiTokenController @Inject() (
-  ssoConnector:             SsoConnector,
-  auditingService:          AuditingService,
-  frontendAppConfig:        AppConfig,
+  ssoConnector: SsoConnector,
+  auditingService: AuditingService,
+  frontendAppConfig: AppConfig,
   val continueUrlValidator: ContinueUrlValidator,
-  controllerComponents:     MessagesControllerComponents
+  controllerComponents: MessagesControllerComponents
 )(implicit val ec: ExecutionContext)
     extends FrontendController(controllerComponents)
     with PermittedContinueUrl {
@@ -72,8 +72,8 @@ class ApiTokenController @Inject() (
         )
       }
     }.recover {
-      case UpstreamErrorResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq): _*)
-      case UpstreamErrorResponse(_, FORBIDDEN, _, headers)    => Forbidden.withHeaders(unGroup(headers.toSeq): _*)
+      case UpstreamErrorResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq)*)
+      case UpstreamErrorResponse(_, FORBIDDEN, _, headers)    => Forbidden.withHeaders(unGroup(headers.toSeq)*)
       case UpstreamErrorResponse(message, BAD_REQUEST, _, _)  => BadRequest(message)
     }
   }

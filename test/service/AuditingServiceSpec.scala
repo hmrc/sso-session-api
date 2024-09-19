@@ -17,7 +17,9 @@
 package service
 
 import audit.AuditingService
-import org.mockito.captor.{ArgCaptor, Captor}
+import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.BeforeAndAfterEach
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
@@ -36,9 +38,9 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
 
       await(service.sendTokenCreatedEvent(redirectUrl)(fakeRequestWithHeaders))
 
-      val dataEventCaptor: Captor[DataEvent] = ArgCaptor[DataEvent]
+      val dataEventCaptor: ArgumentCaptor[DataEvent] = ArgumentCaptor.forClass(classOf[DataEvent])
       verify(mockAuditConnector).sendEvent(dataEventCaptor.capture)(any, any)
-      val dataEvent: DataEvent = dataEventCaptor.value
+      val dataEvent: DataEvent = dataEventCaptor.getValue
 
       dataEvent.auditSource shouldBe "sso-session-api"
       dataEvent.auditType   shouldBe "api-sso-token-created"

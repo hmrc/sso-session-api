@@ -27,8 +27,8 @@ class AppConfig @Inject() (configuration: Configuration, servicesConfig: Service
 
   lazy val ssoUrl: String = servicesConfig.baseUrl("sso")
 
-  val crypto: Encrypter with Decrypter = SymmetricCryptoFactory.aesGcmCryptoFromConfig(baseConfigKey = "sso.encryption", configuration.underlying)
-  override def decrypt(reversiblyEncrypted:        Crypted):      PlainText = crypto.decrypt(reversiblyEncrypted)
-  override def decryptAsBytes(reversiblyEncrypted: Crypted):      PlainBytes = crypto.decryptAsBytes(reversiblyEncrypted)
-  override def encrypt(plain:                      PlainContent): Crypted = crypto.encrypt(plain)
+  val crypto: Encrypter & Decrypter = SymmetricCryptoFactory.aesGcmCryptoFromConfig(baseConfigKey = "sso.encryption", configuration.underlying)
+  override def decrypt(reversiblyEncrypted: Crypted): PlainText = crypto.decrypt(reversiblyEncrypted)
+  override def decryptAsBytes(reversiblyEncrypted: Crypted): PlainBytes = crypto.decryptAsBytes(reversiblyEncrypted)
+  override def encrypt(plain: PlainContent): Crypted = crypto.encrypt(plain)
 }

@@ -18,7 +18,7 @@ package controllers.sandbox
 
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
-import play.api.mvc._
+import play.api.mvc.*
 import services.{ContinueUrlValidator, PermittedContinueUrl}
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
@@ -28,7 +28,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class SandboxController @Inject() (
   val continueUrlValidator: ContinueUrlValidator,
-  controllerComponents:     MessagesControllerComponents
+  controllerComponents: MessagesControllerComponents
 )(implicit val ec: ExecutionContext)
     extends FrontendController(controllerComponents)
     with PermittedContinueUrl {

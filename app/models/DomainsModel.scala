@@ -16,10 +16,16 @@
 
 package models
 
+import play.api.libs.json.{Format, Json}
+
 case class PermittedDomains(externalDomains: Set[String], internalDomains: Set[String])
 
+object PermittedDomains {
+  implicit val format: Format[PermittedDomains] = Json.format[PermittedDomains]
+}
+
 case class DomainsResponse(permittedDomains: PermittedDomains, maxAge: Int) {
-  val allDomains:      Set[String] = permittedDomains.externalDomains ++ permittedDomains.internalDomains
+  val allDomains: Set[String] = permittedDomains.externalDomains ++ permittedDomains.internalDomains
   val internalDomains: Set[String] = permittedDomains.internalDomains
   val externalDomains: Set[String] = permittedDomains.externalDomains
 }

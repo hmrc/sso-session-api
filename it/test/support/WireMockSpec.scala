@@ -47,7 +47,7 @@ trait WireMockSpec
     )
     .build()
 
-  protected def resource(resource: String) = s"http://localhost:$port$resource"
+  protected def resource(resource: String): String = s"http://localhost:$port$resource"
 
   protected def resourceRequest(url: String): WSRequest = wsClient.url(resource(url)).withHttpHeaders("Csrf-Token" -> "nocheck")
 

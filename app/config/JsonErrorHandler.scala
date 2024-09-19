@@ -19,12 +19,12 @@ package config
 import javax.inject.Inject
 import play.api.Logging
 import play.api.http.HttpErrorHandler
-import play.api.http.Status._
+import play.api.http.Status.*
 import play.api.libs.json.{Json, OFormat}
-import play.api.mvc.Results._
+import play.api.mvc.Results.*
 import play.api.mvc.{RequestHeader, Result}
 import uk.gov.hmrc.auth.core.AuthorisationException
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.*
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.bootstrap.config.HttpAuditEvent
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendHeaderCarrierProvider
@@ -54,7 +54,7 @@ class JsonErrorHandler @Inject() (
               detail          = Map.empty
             )
           )
-          NotFound(Json.toJson(ErrorResponse(NOT_FOUND, "URI not found", requested = Some(request.path))))
+          NotFound(Json.toJson(ErrorResponse(NOT_FOUND, "URI not found", requested = Some(request.path), xStatusCode = None)))
         case BAD_REQUEST =>
           auditConnector.sendEvent(
             dataEvent(
@@ -64,7 +64,7 @@ class JsonErrorHandler @Inject() (
               detail          = Map.empty
             )
           )
-          BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, "bad request")))
+          BadRequest(Json.toJson(ErrorResponse(BAD_REQUEST, "bad request", None, None)))
         case _ =>
           auditConnector.sendEvent(
             dataEvent(
@@ -74,7 +74,7 @@ class JsonErrorHandler @Inject() (
               detail          = Map.empty
             )
           )
-          Status(statusCode)(Json.toJson(ErrorResponse(statusCode, message)))
+          Status(statusCode)(Json.toJson(ErrorResponse(statusCode, message, None, None)))
       }
     }
 
@@ -86,22 +86,22 @@ class JsonErrorHandler @Inject() (
       case _: NotFoundException      => "ResourceNotFound"
       case _: AuthorisationException => "ClientError"
       case _: JsValidationException  => "ServerValidationError"
-      case _ => "ServerInternalError"
+      case _                         => "ServerInternalError"
     }
 
     val errorResponse = ex match {
       case e: AuthorisationException =>
         logger.error(message, e)
-        ErrorResponse(401, e.getMessage)
+        ErrorResponse(401, e.getMessage, None, None)
       case e: HttpException =>
         logger.error(e.getMessage, e)
-        ErrorResponse(e.responseCode, e.getMessage)
+        ErrorResponse(e.responseCode, e.getMessage, None, None)
       case e: UpstreamErrorResponse =>
         logger.error(e.getMessage, e)
-        ErrorResponse(e.reportAs, e.getMessage)
+        ErrorResponse(e.reportAs, e.getMessage, None, None)
       case e: Throwable =>
         logger.error(message, e)
-        ErrorResponse(INTERNAL_SERVER_ERROR, e.getMessage)
+        ErrorResponse(INTERNAL_SERVER_ERROR, e.getMessage, None, None)
     }
 
     auditConnector.sendEvent(
@@ -116,10 +116,10 @@ class JsonErrorHandler @Inject() (
   }
 
   case class ErrorResponse(
-    statusCode:  Int,
-    message:     String,
-    xStatusCode: Option[String] = None,
-    requested:   Option[String] = None
+    statusCode: Int,
+    message: String,
+    xStatusCode: Option[String],
+    requested: Option[String]
   )
 
   object ErrorResponse {

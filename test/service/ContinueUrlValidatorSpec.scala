@@ -16,6 +16,8 @@
 
 package service
 
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.{verifyNoInteractions, when}
 import org.scalatest.concurrent.ScalaFutures
 import services.{AllowlistService, ContinueUrlValidator}
 import support.UnitSpec
@@ -36,12 +38,12 @@ class ContinueUrlValidatorSpec extends UnitSpec with ScalaFutures {
     "return a SafeRedirectUrl if continueUrl is relative" in new Setup {
       await(continueUrlValidator.getRelativeOrAbsolutePermitted(RedirectUrl("/relative"))) shouldBe Some(SafeRedirectUrl("/relative"))
 
-      verifyZeroInteractions(mockAllowlistService)
+      verifyNoInteractions(mockAllowlistService)
     }
 
     "return a SafeRedirectUrl if continueUrl is absolute whitelisted" in new Setup {
       val url: RedirectUrl = RedirectUrl("http://absolute/whitelisted")
-      when(mockAllowlistService.getPermittedAbsoluteUrl(eqTo(url))(*))
+      when(mockAllowlistService.getPermittedAbsoluteUrl(eqTo(url))(any))
         .thenReturn(Future.successful(Some(SafeRedirectUrl("http://absolute/whitelisted"))))
 
       await(continueUrlValidator.getRelativeOrAbsolutePermitted(url)) shouldBe Some(SafeRedirectUrl("http://absolute/whitelisted"))
@@ -49,7 +51,7 @@ class ContinueUrlValidatorSpec extends UnitSpec with ScalaFutures {
 
     "return None if continueUrl is not relative or absolute whitelisted" in new Setup {
       val url: RedirectUrl = RedirectUrl("http://not-relative-or-absolute-whitelisted")
-      when(mockAllowlistService.getPermittedAbsoluteUrl(eqTo(url))(*))
+      when(mockAllowlistService.getPermittedAbsoluteUrl(eqTo(url))(any))
         .thenReturn(Future.successful(None))
 
       await(continueUrlValidator.getRelativeOrAbsolutePermitted(url)) shouldBe None

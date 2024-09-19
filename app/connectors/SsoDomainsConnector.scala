@@ -16,30 +16,28 @@
 
 package connectors
 
-import java.net.URL
-
 import config.AppConfig
-import javax.inject.{Inject, Singleton}
 import models.{DomainsResponse, PermittedDomains}
 import play.api.http.HeaderNames
-import play.api.libs.json.{Json, OFormat}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
-import uk.gov.hmrc.http.HttpReads.Implicits._
+import play.api.libs.json.Json
+import uk.gov.hmrc.http.HttpReads.Implicits.*
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 
+import java.net.URL
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SsoDomainsConnector @Inject() (http: HttpClient, appConfig: AppConfig)(implicit ec: ExecutionContext) {
+class SsoDomainsConnector @Inject() (http: HttpClientV2, appConfig: AppConfig)(implicit ec: ExecutionContext) {
 
   private val DefaultTTL = 60
   private val MaxAgeHeaderPattern = "max-age=(\\d+)".r
 
   private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
-  implicit val permittedDomainsFormat: OFormat[PermittedDomains] = Json.format[PermittedDomains]
-
   def getDomains()(implicit hc: HeaderCarrier): Future[DomainsResponse] = {
-    http.GET[Either[UpstreamErrorResponse, HttpResponse]](s"$serviceUrl/sso/domains").map {
+    http.get(url"$serviceUrl/sso/domains").execute[Either[UpstreamErrorResponse, HttpResponse]].map {
       case Left(err) => throw err
       case Right(response) =>
         DomainsResponse(

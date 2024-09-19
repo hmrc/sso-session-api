@@ -18,7 +18,7 @@ package services
 
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl._
+import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl.*
 import uk.gov.hmrc.play.bootstrap.binders.{OnlyRelative, RedirectUrl, SafeRedirectUrl}
 
 import scala.concurrent.Future
