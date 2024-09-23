@@ -29,7 +29,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class CachedDomainsService @Inject() (
   ssoDomainsConnector: SsoDomainsConnector,
-  cache:               AsyncCacheApi
+  cache: AsyncCacheApi
 )(implicit ec: ExecutionContext)
     extends Logging {
 

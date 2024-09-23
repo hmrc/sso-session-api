@@ -17,7 +17,7 @@
 package controllers.sandbox
 
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.libs.json._
+import play.api.libs.json.*
 import play.api.mvc.MessagesControllerComponents
 import play.api.test.{FakeRequest, Injecting}
 import services.{AllowlistService, ContinueUrlValidator}

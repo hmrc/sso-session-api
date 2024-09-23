@@ -16,21 +16,23 @@
 
 package controllers
 
-import java.net.URL
 import audit.AuditingService
-import config._
+import config.*
 import connectors.SsoConnector
 import org.apache.commons.codec.binary.Base64
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.mvc.{AnyContentAsEmpty, MessagesControllerComponents, Result}
 import play.api.test.FakeRequest
 import services.ContinueUrlValidator
-import uk.gov.hmrc.crypto._
 import support.UnitSpec
-import uk.gov.hmrc.http.{HeaderNames => HmrcHeaderNames}
+import uk.gov.hmrc.crypto.*
+import uk.gov.hmrc.http.HeaderNames as HmrcHeaderNames
 import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
 
+import java.net.URL
 import scala.concurrent.{ExecutionContext, Future}
 
 class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
@@ -53,10 +55,10 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       HmrcHeaderNames.authorisation -> bearerToken
     )
 
-    val mockAppConfig:                AppConfig = mock[AppConfig]
-    val mockSsoConnector:             SsoConnector = mock[SsoConnector]
-    val mockAuditingService:          AuditingService = mock[AuditingService]
-    val mockContinueUrlValidator:     ContinueUrlValidator = mock[ContinueUrlValidator]
+    val mockAppConfig: AppConfig = mock[AppConfig]
+    val mockSsoConnector: SsoConnector = mock[SsoConnector]
+    val mockAuditingService: AuditingService = mock[AuditingService]
+    val mockContinueUrlValidator: ContinueUrlValidator = mock[ContinueUrlValidator]
     val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
 
     val apiTokenController = new ApiTokenController(

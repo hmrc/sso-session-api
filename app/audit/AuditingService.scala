@@ -16,13 +16,13 @@
 
 package audit
 
-import javax.inject.Inject
-import play.api.mvc.Request
-import uk.gov.hmrc.play.audit.AuditExtensions._
+import play.api.mvc.RequestHeader
+import uk.gov.hmrc.play.audit.AuditExtensions.*
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.DataEvent
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendHeaderCarrierProvider
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuditingService @Inject() (
@@ -30,7 +30,7 @@ class AuditingService @Inject() (
 )(implicit ec: ExecutionContext)
     extends FrontendHeaderCarrierProvider {
 
-  def sendTokenCreatedEvent(continueUrl: String)(implicit request: Request[_]): Future[Unit] = {
+  def sendTokenCreatedEvent(continueUrl: String)(implicit request: RequestHeader): Future[Unit] = {
     sendEvent(
       "api-sso-token-created",
       "api-sso-token-created",
@@ -43,10 +43,10 @@ class AuditingService @Inject() (
   }
 
   private def sendEvent(
-    auditType:       String,
+    auditType: String,
     transactionName: String,
-    details:         Map[String, String]
-  )(implicit request: Request[_]): Future[Unit] = {
+    details: Map[String, String]
+  )(implicit request: RequestHeader): Future[Unit] = {
     val event = DataEvent(
       "sso-session-api",
       auditType,

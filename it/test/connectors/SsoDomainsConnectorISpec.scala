@@ -16,42 +16,31 @@
 
 package connectors
 
-import config.AppConfig
+import com.github.tomakehurst.wiremock.client.WireMock.{get, okJson, stubFor}
 import models.{DomainsResponse, PermittedDomains}
 import org.scalatest.concurrent.ScalaFutures
-import play.api.http.HeaderNames
 import play.api.libs.json.Json
-import support.UnitSpec
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import play.api.test.Injecting
+import play.mvc.Http.HeaderNames
+import support.WireMockSpec
+import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ExecutionContext, Future}
-
-class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
+class SsoDomainsConnectorISpec extends WireMockSpec with ScalaFutures with Injecting {
 
   trait Setup {
-    val mockHttp: HttpClient = mock[HttpClient]
-    val serviceBaseURL = "http://mockbaseurl:1234"
-    val mockAppConfig: AppConfig = mock[AppConfig]
-
-    val ssoDomainsConnector = new SsoDomainsConnector(mockHttp, mockAppConfig)(ExecutionContext.global)
+    val ssoDomainsConnector: SsoDomainsConnector = inject[SsoDomainsConnector]
   }
 
   "SsoDomainsConnector" should {
 
     "return Future[DomainsResponse] and max-age value when getDomains() is called" in new Setup {
-      when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockPermittedDomains: PermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(
-        Future.successful(
-          Right(
-            HttpResponse(
-              200,
-              json = Json.format[PermittedDomains].writes(mockPermittedDomains),
-              Map(HeaderNames.CACHE_CONTROL -> Seq("max-age=33"))
-            )
+      stubFor(
+        get("/sso/domains")
+          .willReturn(
+            okJson(Json.toJson(mockPermittedDomains).toString).withHeader(HeaderNames.CACHE_CONTROL, "max-age=33")
           )
-        )
       )
 
       val domains: DomainsResponse = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
@@ -61,24 +50,17 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
           maxAge                shouldBe 33
-        case _ => fail("PermittedDomains expected")
       }
     }
 
     "return Future[DomainsResponse] and default max-age value when getDomains() is called where no max-age header in http response" in new Setup {
-      when(mockAppConfig.ssoUrl).thenReturn("http://mockbaseurl:1234")
       val mockPermittedDomains: PermittedDomains = PermittedDomains(Set("domain1.com", "domain2.com"), Set("domain3.com", "domain4.com"))
 
-      when(mockHttp.GET[Either[UpstreamErrorResponse, HttpResponse]](any, any, any)(any, any, any)).thenReturn(
-        Future.successful(
-          Right(
-            HttpResponse(
-              200,
-              json = Json.format[PermittedDomains].writes(mockPermittedDomains),
-              Map.empty
-            )
+      stubFor(
+        get("/sso/domains")
+          .willReturn(
+            okJson(Json.toJson(mockPermittedDomains).toString)
           )
-        )
       )
 
       val domains: DomainsResponse = await(ssoDomainsConnector.getDomains()(HeaderCarrier()))
@@ -88,7 +70,6 @@ class SsoDomainsConnectorSpec extends UnitSpec with ScalaFutures {
           extDomains.headOption shouldBe Some("domain1.com")
           intDomains.headOption shouldBe Some("domain3.com")
           maxAge                shouldBe 60
-        case _ => fail("PermittedDomains expected")
       }
     }
 

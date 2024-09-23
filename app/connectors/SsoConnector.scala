@@ -17,23 +17,25 @@
 package connectors
 
 import java.net.URL
-
 import com.google.inject.Inject
 import config.AppConfig
+
 import javax.inject.Singleton
 import models.ApiToken
 import play.api.http.HeaderNames
-import play.api.libs.functional.syntax._
-import play.api.libs.json.Reads._
-import play.api.libs.json._
-import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http._
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.Reads.*
+import play.api.libs.json.*
+import play.api.libs.ws.writeableOf_JsValue
+import uk.gov.hmrc.http.HttpReads.Implicits.*
+import uk.gov.hmrc.http.*
+import uk.gov.hmrc.http.client.HttpClientV2
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SsoConnector @Inject() (
-  http:      HttpClient,
+  http: HttpClientV2,
   appConfig: AppConfig
 )(implicit val ec: ExecutionContext)
     extends ApiJsonFormats {
@@ -41,10 +43,10 @@ class SsoConnector @Inject() (
   private lazy val serviceUrl = new URL(appConfig.ssoUrl)
 
   def createToken(tokenRequest: ApiToken)(implicit hc: HeaderCarrier): Future[URL] = {
-    val createTokensUrl = s"$serviceUrl/sso/api-tokens"
+    val createTokensUrl = url"$serviceUrl/sso/api-tokens"
 
     for {
-      response <- http.POST[ApiToken, Either[UpstreamErrorResponse, HttpResponse]](createTokensUrl, tokenRequest).map {
+      response <- http.post(createTokensUrl).withBody(Json.toJson(tokenRequest)).execute[Either[UpstreamErrorResponse, HttpResponse]].map {
                     case Right(response) => response
                     case Left(err)       => throw err
                   }
@@ -57,7 +59,7 @@ class SsoConnector @Inject() (
   }
 
   def getTokenDetails(tokenUrl: URL)(implicit hc: HeaderCarrier): Future[ApiToken] = {
-    http.GET[ApiToken](tokenUrl.toString)
+    http.get(tokenUrl).execute[ApiToken]
   }
 }
 
@@ -69,7 +71,7 @@ trait ApiJsonFormats {
       (JsPath \ "session-id").format[String] and
       (JsPath \ "continue-url").format[String] and
       (JsPath \ "user-id").formatNullable[String]
-  )(ApiToken.apply, unlift(ApiToken.unapply))
+  )(ApiToken.apply, o => Tuple.fromProductTyped(o))
 
   implicit val ssoInSessionInfoRead: Reads[SsoInSessionInfo] = Json.reads[SsoInSessionInfo]
 

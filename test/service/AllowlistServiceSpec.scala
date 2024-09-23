@@ -17,6 +17,8 @@
 package service
 
 import models.{DomainsResponse, PermittedDomains}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
 import services.{AllowlistService, CachedDomainsService}
 import support.UnitSpec

@@ -48,7 +48,7 @@ class ApiControllerWireMockSpec extends BaseISpec {
   }
 
   trait Setup {
-    val username = s"perf-sa-${System.currentTimeMillis()}"
+    val username: String = s"perf-sa-${System.currentTimeMillis()}"
     val sessionId = "session-id-123"
     val authToken = "Bearer something"
     val userId = "/auth/session/1"

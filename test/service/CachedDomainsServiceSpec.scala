@@ -18,6 +18,9 @@ package service
 
 import connectors.SsoDomainsConnector
 import models.{DomainsResponse, PermittedDomains}
+import org.apache.pekko.Done
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.{lenient, verify, verifyNoInteractions, verifyNoMoreInteractions, when}
 import play.api.cache.AsyncCacheApi
 import services.CachedDomainsService
 import support.UnitSpec
@@ -30,12 +33,12 @@ class CachedDomainsServiceSpec extends UnitSpec {
 
   trait Setup {
     val mockSsoDomainsConnector: SsoDomainsConnector = mock[SsoDomainsConnector]
-    val mockCache:               AsyncCacheApi = mock[AsyncCacheApi]
+    val mockCache: AsyncCacheApi = mock[AsyncCacheApi]
 
-    val domainsFromRealSSO:          DomainsResponse = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 123)
+    val domainsFromRealSSO: DomainsResponse = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 123)
     val ssoResponseWithSuggestedTTL: (DomainsResponse, Some[String]) = (domainsFromRealSSO, Some("max-age=123"))
-    val ssoResponseWithNoTTL:        (DomainsResponse, None.type) = (domainsFromRealSSO, None)
-    val cachedDomains:               DomainsResponse = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 0)
+    val ssoResponseWithNoTTL: (DomainsResponse, None.type) = (domainsFromRealSSO, None)
+    val cachedDomains: DomainsResponse = DomainsResponse(PermittedDomains(Set.empty, Set.empty), 0)
 
     val cachedDomainsService = new CachedDomainsService(mockSsoDomainsConnector, mockCache)(ExecutionContext.global)
   }
@@ -44,7 +47,7 @@ class CachedDomainsServiceSpec extends UnitSpec {
 
     "delegate to the real connector when the cache misses" in new Setup {
       when(mockCache.get[DomainsResponse]("sso/domains")).thenReturn(Future.successful(None))
-      when(mockCache.set(eqTo("sso/domains"), any, any)).isLenient()
+      lenient().when(mockCache.set(eqTo("sso/domains"), any, any)).thenReturn(Future.successful(Done))
       when(mockSsoDomainsConnector.getDomains()(any)).thenReturn(Future.successful(domainsFromRealSSO))
 
       await(cachedDomainsService.getDomains()(HeaderCarrier())) shouldBe Some(domainsFromRealSSO)
@@ -52,10 +55,10 @@ class CachedDomainsServiceSpec extends UnitSpec {
 
     "return the cached value if the cache is populated" in new Setup {
       when(mockCache.get[DomainsResponse]("sso/domains")).thenReturn(Future.successful(Some(cachedDomains)))
-      when(mockCache.set(eqTo("sso/domains"), any, any)).isLenient()
+      lenient().when(mockCache.set(eqTo("sso/domains"), any, any)).thenReturn(Future.successful(Done))
 
       await(cachedDomainsService.getDomains()(HeaderCarrier())) shouldBe Some(cachedDomains)
-      verifyZeroInteractions(mockSsoDomainsConnector)
+      verifyNoInteractions(mockSsoDomainsConnector)
     }
 
     "populate the cache when a call to the real connector succeeds" in new Setup {

@@ -8,7 +8,7 @@ object ScoverageSettings {
     ScoverageKeys.coverageMinimumStmtTotal := 60,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
-    parallelExecution in Test := false,
+    Test / parallelExecution := false,
     ScoverageKeys.coverageExcludedFiles := Seq(
       "<empty>",
       "Reverse.*",
