@@ -33,3 +33,8 @@ _NOTE: requires Bearer token and session id_
   }
 }
 ```
+
+## Run tests
+```shell
+sbt clean coverage test it/test coverageReport 
+```
