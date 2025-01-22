@@ -1,9 +1,9 @@
 import sbt.Keys.parallelExecution
-import sbt._
+import sbt.{Def, *}
 import scoverage.ScoverageKeys
 
 object ScoverageSettings {
-  def apply() = Seq(
+  def apply(): Seq[Def.Setting[?]] = Seq(
     ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;.*(config|views.*);.*(AuthService|BuildInfo|Routes).*",
     ScoverageKeys.coverageMinimumStmtTotal := 60,
     ScoverageKeys.coverageFailOnMinimum := true,

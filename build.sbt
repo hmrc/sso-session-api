@@ -1,23 +1,27 @@
+import play.sbt.PlayImport.PlayKeys.playDefaultPort
+import sbt.Keys.libraryDependencies
 import uk.gov.hmrc.DefaultBuildSettings
 
 val appName = "sso-session-api"
 
 ThisBuild / majorVersion := 0
-ThisBuild / scalaVersion := "3.5.0"
+ThisBuild / scalaVersion := "3.5.1"
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
-  .settings(DefaultBuildSettings.scalaSettings *)
-  .settings(DefaultBuildSettings.defaultSettings() *)
   .settings(
-    scalacOptions += "-Wconf:msg=unused import&src=html/.*:s",
-    scalacOptions += "-Wconf:msg=unused import&src=routes/.*:s",
-    scalacOptions += "-Wconf:src=routes/.*:s"
+    playDefaultPort := 9551,
+    libraryDependencies ++= AppDependencies(),
+    scalacOptions ++= Seq(
+      "-Werror",
+      "-Wconf:msg=Flag.*repeatedly:s",
+      "-Wconf:src=routes/.*&msg=unused import:s",
+      "-Wconf:src=routes/.*&msg=unused private member:s",
+      "-Wconf:src=twirl/.*&msg=unused import:s"
+    ),
+    scalafmtOnCompile := true
   )
-  .settings(libraryDependencies ++= AppDependencies())
   .settings(ScoverageSettings())
-  .settings(PlayKeys.playDefaultPort := 9551)
-  .settings(scalafmtOnCompile := true)
 
 lazy val it = project
   .enablePlugins(PlayScala)
