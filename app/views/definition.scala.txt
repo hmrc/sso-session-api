@@ -3,13 +3,6 @@
 @(permittedApplicationIds: Seq[String])
 
 {
-  "scopes": [
-    {
-      "key": "read:web-session",
-      "name": "access a web session",
-      "description": "Access a web session"
-    }
-  ],
   "api": {
     "name": "Web Session API",
     "description": "Provides web/browser access to the current API user.",
