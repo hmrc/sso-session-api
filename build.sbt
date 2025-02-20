@@ -5,7 +5,7 @@ import uk.gov.hmrc.DefaultBuildSettings
 val appName = "sso-session-api"
 
 ThisBuild / majorVersion := 0
-ThisBuild / scalaVersion := "3.5.1"
+ThisBuild / scalaVersion := "3.3.4"
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
