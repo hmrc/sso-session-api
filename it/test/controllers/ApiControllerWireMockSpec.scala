@@ -28,7 +28,7 @@ class ApiControllerWireMockSpec extends BaseISpec {
     "create an api sso token with random session-id" in new Setup {
       expectAuthorityRecordToBeFound()
       expectTokenToBeSuccessfullyCreated("/somewhere")
-
+      setupForCentralAuthorisation()
       val response: WSResponse = await(
         resourceRequest("/web-session")
           .withQueryStringParameters("continueUrl" -> "/somewhere")
@@ -78,6 +78,10 @@ class ApiControllerWireMockSpec extends BaseISpec {
           .withRequestBody(containing(s""""continue-url":"$continueUrl""""))
           .willReturn(ok.withHeader(LOCATION, "/api-token-location"))
       )
+    }
+
+    def setupForCentralAuthorisation(): Unit = {
+      stubFor(post("/centralised-authorisation-server/token").willReturn(aResponse().withStatus(204)))
     }
   }
 
