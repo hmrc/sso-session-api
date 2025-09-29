@@ -23,7 +23,8 @@ import org.scalatest.concurrent.ScalaFutures
 import services.{AllowlistService, CachedDomainsService}
 import support.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
+import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl.*
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl, UnsafePermitAll}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -46,14 +47,14 @@ class AllowlistServiceSpec extends UnitSpec with ScalaFutures {
     "return true for continueUrl with a valid internal hostname" in new Setup {
       when(mockCachedDomainsService.getDomains()).thenReturn(Future.successful(Some(validDomains)))
       await(allowlistService.getPermittedAbsoluteUrl(RedirectUrl("https://www.validinternal.gov.uk"))) shouldBe Some(
-        SafeRedirectUrl("https://www.validinternal.gov.uk")
+        RedirectUrl("https://www.validinternal.gov.uk").get(UnsafePermitAll)
       )
     }
 
     "return true for continueUrl with a valid external hostname" in new Setup {
       when(mockCachedDomainsService.getDomains()).thenReturn(Future.successful(Some(validDomains)))
       await(allowlistService.getPermittedAbsoluteUrl(RedirectUrl("https://www.validexternal.com"))) shouldBe Some(
-        SafeRedirectUrl("https://www.validexternal.com")
+        RedirectUrl("https://www.validexternal.com").get(UnsafePermitAll)
       )
     }
 

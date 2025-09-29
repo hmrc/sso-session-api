@@ -30,11 +30,11 @@ import services.ContinueUrlValidator
 import support.UnitSpec
 import uk.gov.hmrc.crypto.*
 import uk.gov.hmrc.http.HeaderNames as HmrcHeaderNames
-import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
+import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl.*
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, UnsafePermitAll}
 
 import java.net.URL
 import scala.concurrent.{ExecutionContext, Future}
-
 class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneAppPerSuite {
 
   trait Setup {
@@ -74,7 +74,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
     "respond with 200 and encrypted token in message" in new Setup {
       when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
-        .thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
+        .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
       when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
 
       val tokenUrl = new URL("http://sso.service/tokenId/1234")
@@ -97,7 +97,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
     "respond with 200 if no session-id provided" in new Setup {
       when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
-        .thenReturn(Future.successful(Some(SafeRedirectUrl(continueUrl.unsafeValue))))
+        .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
       when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
       when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
 

@@ -22,7 +22,8 @@ import org.scalatest.concurrent.ScalaFutures
 import services.{AllowlistService, ContinueUrlValidator}
 import support.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl}
+import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl.*
+import uk.gov.hmrc.play.bootstrap.binders.{RedirectUrl, SafeRedirectUrl, UnsafePermitAll}
 
 import scala.concurrent.Future
 
@@ -36,7 +37,8 @@ class ContinueUrlValidatorSpec extends UnitSpec with ScalaFutures {
 
   "getRelativeOrAbsoluteWhiteListed" should {
     "return a SafeRedirectUrl if continueUrl is relative" in new Setup {
-      await(continueUrlValidator.getRelativeOrAbsolutePermitted(RedirectUrl("/relative"))) shouldBe Some(SafeRedirectUrl("/relative"))
+      val url = RedirectUrl("/relative")
+      await(continueUrlValidator.getRelativeOrAbsolutePermitted(url)) shouldBe Some(url.get(UnsafePermitAll))
 
       verifyNoInteractions(mockAllowlistService)
     }
@@ -44,9 +46,9 @@ class ContinueUrlValidatorSpec extends UnitSpec with ScalaFutures {
     "return a SafeRedirectUrl if continueUrl is absolute whitelisted" in new Setup {
       val url: RedirectUrl = RedirectUrl("http://absolute/whitelisted")
       when(mockAllowlistService.getPermittedAbsoluteUrl(eqTo(url))(any))
-        .thenReturn(Future.successful(Some(SafeRedirectUrl("http://absolute/whitelisted"))))
+        .thenReturn(Future.successful(Some(url.get(UnsafePermitAll))))
 
-      await(continueUrlValidator.getRelativeOrAbsolutePermitted(url)) shouldBe Some(SafeRedirectUrl("http://absolute/whitelisted"))
+      await(continueUrlValidator.getRelativeOrAbsolutePermitted(url)) shouldBe Some(url.get(UnsafePermitAll))
     }
 
     "return None if continueUrl is not relative or absolute whitelisted" in new Setup {
