@@ -2,14 +2,14 @@ import play.sbt.PlayImport.*
 import sbt.*
 
 private object AppDependencies {
-  private val bootstrapVersion = "10.1.0"
+  private val bootstrapVersion = "10.5.0"
 
   private val compile: Seq[ModuleID] = Seq(
     caffeine,
     // claims to be a frontend even though it's definitely a backend so it has access to `sso.encryption.key`,
     // and because it appears to need to set cookies
     "uk.gov.hmrc" %% "bootstrap-frontend-play-30"                        % bootstrapVersion,
-    "uk.gov.hmrc" %% "centralised-authorisation-resource-client-play-30" % "1.12.0",
+    "uk.gov.hmrc" %% "centralised-authorisation-resource-client-play-30" % "1.15.0",
     "uk.gov.hmrc" %% s"auth-client-play-30"                              % "8.8.0"
   )
 
