@@ -25,7 +25,7 @@ import uk.gov.hmrc.http.HeaderNames
 class ApiControllerWireMockSpec extends BaseISpec {
 
   "api" should {
-    "create an api sso token with random session-id" in new Setup {
+    "create an api sso token" in new Setup {
       expectAuthorityRecordToBeFound()
       expectTokenToBeSuccessfullyCreated("/somewhere")
       setupForCentralAuthorisation()
