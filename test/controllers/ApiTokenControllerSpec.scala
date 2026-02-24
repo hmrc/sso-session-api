@@ -124,7 +124,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
   "handle the sessionId transformation correctly" when {
 
-    "sessionId is NOT provided and mdtpInformation retrieval from auth fails: new sessionId is generated" in new Setup {
+    "auth does not contain session, and the caller such as Pega did not provide one in the header, so a new sessionId is generated" in new Setup {
       when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
         .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
       when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
@@ -150,7 +150,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       sessionIdSentToAudit.get should include("session-")
     }
 
-    "sessionId is NOT provided in request and mdtpInformation retrieval from auth returns None: new sessionId is generated" in new Setup {
+    "auth contains a session but no sessionId exists via the mdtpInformation retrieval, and the caller such as Pega did not provide one in the header, so a new sessionId is generated" in new Setup {
       when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
         .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
       when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
@@ -176,7 +176,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       sessionIdSentToAudit.get should include("session-")
     }
 
-    "sessionId is provided and mdtpInformation retrieval from auth returns None: sessionId from the request is used" in new Setup {
+    "auth contains a session but no sessionId via the mdtpInformation retrieval, and the caller such as Pega has provided one in the header so use that" in new Setup {
       when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
         .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
       when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
@@ -203,7 +203,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       sessionIdSentToAudit shouldBe Some("sessionIdInRequest")
     }
 
-    "sessionId is NOT provided and mdtpInformation retrieval from auth returns a record: sessionId from mdtpInformation is used" in new Setup {
+    "auth contains a session with a sessionId via the mdtpInformation retrieval so use that; noting caller such as Pega did not provide a sessionId" in new Setup {
       when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
         .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
       when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
@@ -229,7 +229,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       sessionIdSentToAudit shouldBe Some("sessionIdFromAuth")
     }
 
-    "sessionId is provided and mdtpInformation retrieval from auth returns a record: sessionId from mdtpInformation is used" in new Setup {
+    "auth contains a session with a sessionId via the mdtpInformation retrieval so use that; noting caller such as Pega has provided a sessionId which is ignored" in new Setup {
       when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
         .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
       when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)

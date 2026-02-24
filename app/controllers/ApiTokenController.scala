@@ -54,7 +54,7 @@ class ApiTokenController @Inject() (
       .authorise(EmptyPredicate, Retrievals.mdtpInformation)
       .recover(_ => None)
       .map {
-        // [GG-9130] Use sessionId from mdtpInformation if it exists, otherwise use incoming sessionId if provided, otherwise generate new
+        // [GG-9130] If sessionId exists in auth against the BT use this, otherwise use the provided header version from the caller (Pega et al.). If this is not set, generate one.
         case Some(mdtpInformation) => mdtpInformation.sessionId
         case None                  => hc.sessionId.map(_.value).getOrElse(s"session-${UUID.randomUUID().toString}")
       }
