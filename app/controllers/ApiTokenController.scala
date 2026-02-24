@@ -20,6 +20,7 @@ import audit.AuditingService
 import config.*
 import connectors.SsoConnector
 import models.ApiToken
+import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, RequestHeader}
 import services.{ContinueUrlValidator, PermittedContinueUrl}
@@ -36,6 +37,7 @@ import java.net.URL
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
+import scala.util.Success
 
 @Singleton
 class ApiTokenController @Inject() (
@@ -47,16 +49,26 @@ class ApiTokenController @Inject() (
   controllerComponents: MessagesControllerComponents
 )(implicit val ec: ExecutionContext)
     extends FrontendController(controllerComponents)
-    with PermittedContinueUrl {
+    with PermittedContinueUrl
+    with Logging {
 
   def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
     authConnector
       .authorise(EmptyPredicate, Retrievals.mdtpInformation)
-      .recover(_ => None)
-      .map {
+      .transform {
         // [GG-9130] If sessionId exists in auth against the BT use this, otherwise use the provided header version from the caller (Pega et al.). If this is not set, generate one.
-        case Some(mdtpInformation) => mdtpInformation.sessionId
-        case None                  => hc.sessionId.map(_.value).getOrElse(s"session-${UUID.randomUUID().toString}")
+        case Success(Some(mdtpInformation)) => Success(mdtpInformation.sessionId)
+        case otherResult =>
+          if (otherResult == Success(None))
+            logger.warn(s"[GG-9130] SSO token request - auth record found but no sessionId, requestId : ${hc.requestId}")
+          val sessionIdFromRequestHeader: Option[String] = hc.sessionId.map(_.value)
+          Success(sessionIdFromRequestHeader.getOrElse {
+            val generatedSessionId = s"session-${UUID.randomUUID().toString}"
+            logger.warn(
+              s"[GG-9130] SSO token request - no sessionId found in auth or request, generating sessionId : $generatedSessionId, requestId : ${hc.requestId}"
+            )
+            generatedSessionId
+          })
       }
       .flatMap { modifiedSessionId =>
         // [GG-9130] this implicit is defined to be picked up by auditingService.sendTokenCreatedEvent
