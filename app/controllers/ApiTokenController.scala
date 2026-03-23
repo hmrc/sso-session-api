@@ -22,13 +22,14 @@ import connectors.SsoConnector
 import models.ApiToken
 import play.api.Logging
 import play.api.libs.json.Json
+import play.api.mvc.request.{Cell, RequestAttrKey}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, RequestHeader}
 import services.{ContinueUrlValidator, PermittedContinueUrl}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.crypto.PlainText
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HeaderNames, SessionId, UpstreamErrorResponse}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HeaderNames, SessionId, SessionKeys, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -54,7 +55,7 @@ class ApiTokenController @Inject() (
 
   def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
     authConnector
-      .authorise(EmptyPredicate, Retrievals.mdtpInformation)
+      .authorise(EmptyPredicate, Retrievals.mdtpInformation)(HeaderCarrierConverter.fromRequest(request), implicitly[ExecutionContext])
       .transform {
         // [GG-9130] If sessionId exists in auth against the BT use this, otherwise use the provided header version from the caller (Pega et al.). If this is not set, generate one.
         case Success(Some(mdtpInformation)) => Success(mdtpInformation.sessionId)
@@ -72,9 +73,11 @@ class ApiTokenController @Inject() (
       }
       .flatMap { modifiedSessionId =>
         // [GG-9130] this implicit is defined to be picked up by auditingService.sendTokenCreatedEvent
-        implicit val modifiedRequest: RequestHeader = request.withHeaders(
-          request.headers.replace(HeaderNames.xSessionId -> modifiedSessionId)
-        )
+        val session = request.session + (SessionKeys.sessionId -> modifiedSessionId)
+        implicit val modifiedRequest: RequestHeader = {
+          val headers = request.headers.replace(HeaderNames.xSessionId -> modifiedSessionId)
+          request.withHeaders(headers).addAttr(RequestAttrKey.Session, Cell(session))
+        }
         // we have to manually define a new hc as the implicit `hc` conversion ignores the authorisation header
         implicit val hc: HeaderCarrier = HeaderCarrierConverter
           .fromRequest(modifiedRequest)
@@ -98,7 +101,7 @@ class ApiTokenController @Inject() (
                   "session" -> redeemUrl(tokenUrl)
                 )
               )
-            )
+            ).withSession(session)
           }
         }.recover {
           case UpstreamErrorResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq)*)
