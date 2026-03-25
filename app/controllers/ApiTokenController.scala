@@ -23,13 +23,13 @@ import models.ApiToken
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.request.{Cell, RequestAttrKey}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, RequestHeader}
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, RequestHeader, Result}
 import services.{ContinueUrlValidator, PermittedContinueUrl}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import uk.gov.hmrc.crypto.PlainText
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HeaderNames, SessionId, SessionKeys, UpstreamErrorResponse}
+import uk.gov.hmrc.http.{BadRequestException, HeaderNames, SessionKeys, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -37,7 +37,7 @@ import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import java.net.URL
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
 @Singleton
@@ -53,7 +53,8 @@ class ApiTokenController @Inject() (
     with PermittedContinueUrl
     with Logging {
 
-  def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
+  // [GG-9130] Determine if there is an existing sessionId that must be used, and if not, generate one.
+  private def withExistingOrNewSessionId(f: RequestHeader => Future[Result])(implicit request: RequestHeader): Future[Result] = {
     authConnector
       .authorise(EmptyPredicate, Retrievals.mdtpInformation)(HeaderCarrierConverter.fromRequest(request), implicitly[ExecutionContext])
       .transform {
@@ -72,43 +73,52 @@ class ApiTokenController @Inject() (
           })
       }
       .flatMap { modifiedSessionId =>
-        // [GG-9130] this implicit is defined to be picked up by auditingService.sendTokenCreatedEvent
-        val session = request.session + (SessionKeys.sessionId -> modifiedSessionId)
+        val session = {
+          val sessionWithAuthToken = request.headers.get(HeaderNames.authorisation) match {
+            case Some(authToken) => request.session + (SessionKeys.authToken -> authToken)
+            case None            => request.session
+          }
+          sessionWithAuthToken + (SessionKeys.sessionId -> modifiedSessionId)
+        }
         implicit val modifiedRequest: RequestHeader = {
           val headers = request.headers.replace(HeaderNames.xSessionId -> modifiedSessionId)
-          request.withHeaders(headers).addAttr(RequestAttrKey.Session, Cell(session))
+          request
+            .withHeaders(headers)
+            .addAttr(RequestAttrKey.Session, Cell(session))
         }
-        // we have to manually define a new hc as the implicit `hc` conversion ignores the authorisation header
-        implicit val hc: HeaderCarrier = HeaderCarrierConverter
-          .fromRequest(modifiedRequest)
-          .copy(sessionId = Some(SessionId(modifiedSessionId)))
 
-        withPermittedContinueUrl(continueUrl) { permittedUrl =>
-          val maybeApiToken = for {
-            bearer    <- hc.authorization
-            sessionId <- hc.sessionId
-          } yield ApiToken(bearer.value, sessionId.value, permittedUrl.url, Some("deprecated"))
+        f(modifiedRequest).map(_.withSession(session))
+      }
+  }
 
-          maybeApiToken.fold {
-            throw new BadRequestException("No Authorisation header in the request")
-          } { apiToken =>
-            for {
-              tokenUrl <- ssoConnector.createToken(apiToken)
-              _ = auditingService.sendTokenCreatedEvent(permittedUrl.url)
-            } yield Ok(
-              Json.obj(
-                "_links" -> Json.obj(
-                  "session" -> redeemUrl(tokenUrl)
-                )
+  def create(continueUrl: RedirectUrl): Action[AnyContent] = Action.async { implicit request =>
+    withExistingOrNewSessionId { implicit modifiedRequest =>
+      withPermittedContinueUrl(continueUrl) { permittedUrl =>
+        val maybeApiToken = for {
+          bearer    <- hc.authorization
+          sessionId <- hc.sessionId
+        } yield ApiToken(bearer.value, sessionId.value, permittedUrl.url, Some("deprecated"))
+
+        maybeApiToken.fold {
+          throw new BadRequestException("No Authorisation header in the request")
+        } { apiToken =>
+          for {
+            tokenUrl <- ssoConnector.createToken(apiToken)
+            _ = auditingService.sendTokenCreatedEvent(permittedUrl.url)
+          } yield Ok(
+            Json.obj(
+              "_links" -> Json.obj(
+                "session" -> redeemUrl(tokenUrl)
               )
-            ).withSession(session)
-          }
-        }.recover {
-          case UpstreamErrorResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq)*)
-          case UpstreamErrorResponse(_, FORBIDDEN, _, headers)    => Forbidden.withHeaders(unGroup(headers.toSeq)*)
-          case UpstreamErrorResponse(message, BAD_REQUEST, _, _)  => BadRequest(message)
+            )
+          )
         }
       }
+    }.recover {
+      case UpstreamErrorResponse(_, UNAUTHORIZED, _, headers) => Unauthorized.withHeaders(unGroup(headers.toSeq)*)
+      case UpstreamErrorResponse(_, FORBIDDEN, _, headers)    => Forbidden.withHeaders(unGroup(headers.toSeq)*)
+      case UpstreamErrorResponse(message, BAD_REQUEST, _, _)  => BadRequest(message)
+    }
   }
 
   private def redeemUrl(tokenUrl: URL) = {
