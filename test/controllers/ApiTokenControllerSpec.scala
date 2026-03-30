@@ -20,14 +20,18 @@ import audit.AuditingService
 import config.*
 import connectors.SsoConnector
 import org.apache.commons.codec.binary.Base64
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.mvc.{AnyContentAsEmpty, MessagesControllerComponents, Result}
+import play.api.mvc.{AnyContentAsEmpty, MessagesControllerComponents, RequestHeader, Result}
 import play.api.test.FakeRequest
 import services.ContinueUrlValidator
 import support.UnitSpec
+import uk.gov.hmrc.auth.core.retrieve.MdtpInformation
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.auth.core.{AuthConnector, SessionRecordNotFound}
 import uk.gov.hmrc.crypto.*
 import uk.gov.hmrc.http.HeaderNames as HmrcHeaderNames
 import uk.gov.hmrc.play.bootstrap.binders.RedirectUrl.*
@@ -57,12 +61,14 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
     val mockAppConfig: AppConfig = mock[AppConfig]
     val mockSsoConnector: SsoConnector = mock[SsoConnector]
+    val mockAuthConnector: AuthConnector = mock[AuthConnector]
     val mockAuditingService: AuditingService = mock[AuditingService]
     val mockContinueUrlValidator: ContinueUrlValidator = mock[ContinueUrlValidator]
     val messagesControllerComponents: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
 
     val apiTokenController = new ApiTokenController(
       ssoConnector         = mockSsoConnector,
+      authConnector        = mockAuthConnector,
       auditingService      = mockAuditingService,
       frontendAppConfig    = mockAppConfig,
       continueUrlValidator = mockContinueUrlValidator,
@@ -80,6 +86,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       val tokenUrl = new URL("http://sso.service/tokenId/1234")
 
       when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
+      when(mockAuthConnector.authorise(any, eqTo(Retrievals.mdtpInformation))(any, any)).thenReturn(Future.successful(None))
 
       val cryptedTokenUrl: Crypted = mock[Crypted]
       when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
@@ -103,6 +110,7 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
 
       val tokenUrl = new URL("http://sso.service/tokenId/1234")
       when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
+      when(mockAuthConnector.authorise(any, eqTo(Retrievals.mdtpInformation))(any, any)).thenReturn(Future.successful(None))
 
       val cryptedTokenUrl: Crypted = mock[Crypted]
       when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
@@ -111,6 +119,142 @@ class ApiTokenControllerSpec extends UnitSpec with ScalaFutures with GuiceOneApp
       val result: Future[Result] = apiTokenController.create(continueUrl)(FakeRequest().withHeaders(HmrcHeaderNames.authorisation -> bearerToken))
 
       status(result) shouldBe 200
+    }
+  }
+
+  "handle the sessionId transformation correctly" when {
+
+    "auth does not contain session, and the caller such as Pega did not provide one in the header, so a new sessionId is generated" in new Setup {
+      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
+        .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
+      when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
+      when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
+
+      val tokenUrl = new URL("http://sso.service/tokenId/1234")
+      when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
+      when(mockAuthConnector.authorise(any, eqTo(Retrievals.mdtpInformation))(any, any)).thenReturn(Future.failed(SessionRecordNotFound()))
+
+      val cryptedTokenUrl: Crypted = mock[Crypted]
+      when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
+      when(cryptedTokenUrl.toBase64).thenReturn(encodedCorrectToken.getBytes())
+
+      val result: Future[Result] = apiTokenController.create(continueUrl)(FakeRequest().withHeaders(HmrcHeaderNames.authorisation -> bearerToken))
+
+      status(result) shouldBe 200
+
+      val requestHeaderCaptor: ArgumentCaptor[RequestHeader] = ArgumentCaptor.forClass(classOf[RequestHeader])
+      verify(mockAuditingService).sendTokenCreatedEvent(any)(requestHeaderCaptor.capture())
+
+      val sessionIdSentToAudit = requestHeaderCaptor.getValue.headers.get(HmrcHeaderNames.xSessionId)
+      sessionIdSentToAudit     should be(defined)
+      sessionIdSentToAudit.get should include("session-")
+    }
+
+    "auth contains a session but no sessionId exists via the mdtpInformation retrieval, and the caller such as Pega did not provide one in the header, so a new sessionId is generated" in new Setup {
+      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
+        .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
+      when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
+      when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
+
+      val tokenUrl = new URL("http://sso.service/tokenId/1234")
+      when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
+      when(mockAuthConnector.authorise(any, eqTo(Retrievals.mdtpInformation))(any, any)).thenReturn(Future.successful(None))
+
+      val cryptedTokenUrl: Crypted = mock[Crypted]
+      when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
+      when(cryptedTokenUrl.toBase64).thenReturn(encodedCorrectToken.getBytes())
+
+      val result: Future[Result] = apiTokenController.create(continueUrl)(FakeRequest().withHeaders(HmrcHeaderNames.authorisation -> bearerToken))
+
+      status(result) shouldBe 200
+
+      val requestHeaderCaptor: ArgumentCaptor[RequestHeader] = ArgumentCaptor.forClass(classOf[RequestHeader])
+      verify(mockAuditingService).sendTokenCreatedEvent(any)(requestHeaderCaptor.capture())
+
+      val sessionIdSentToAudit = requestHeaderCaptor.getValue.headers.get(HmrcHeaderNames.xSessionId)
+      sessionIdSentToAudit     should be(defined)
+      sessionIdSentToAudit.get should include("session-")
+    }
+
+    "auth contains a session but no sessionId via the mdtpInformation retrieval, and the caller such as Pega has provided one in the header so use that" in new Setup {
+      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
+        .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
+      when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
+      when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
+
+      val tokenUrl = new URL("http://sso.service/tokenId/1234")
+      when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
+      when(mockAuthConnector.authorise(any, eqTo(Retrievals.mdtpInformation))(any, any)).thenReturn(Future.successful(None))
+
+      val cryptedTokenUrl: Crypted = mock[Crypted]
+      when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
+      when(cryptedTokenUrl.toBase64).thenReturn(encodedCorrectToken.getBytes())
+
+      val result: Future[Result] = apiTokenController.create(continueUrl)(
+        FakeRequest().withHeaders(HmrcHeaderNames.authorisation -> bearerToken, HmrcHeaderNames.xSessionId -> "sessionIdInRequest")
+      )
+
+      status(result) shouldBe 200
+
+      val requestHeaderCaptor: ArgumentCaptor[RequestHeader] = ArgumentCaptor.forClass(classOf[RequestHeader])
+      verify(mockAuditingService).sendTokenCreatedEvent(any)(requestHeaderCaptor.capture())
+
+      val sessionIdSentToAudit = requestHeaderCaptor.getValue.headers.get(HmrcHeaderNames.xSessionId)
+      sessionIdSentToAudit shouldBe Some("sessionIdInRequest")
+    }
+
+    "auth contains a session with a sessionId via the mdtpInformation retrieval so use that; noting caller such as Pega did not provide a sessionId" in new Setup {
+      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
+        .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
+      when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
+      when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
+
+      val tokenUrl = new URL("http://sso.service/tokenId/1234")
+      when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
+      when(mockAuthConnector.authorise(any, eqTo(Retrievals.mdtpInformation))(any, any))
+        .thenReturn(Future.successful(Some(MdtpInformation("myDeviceId", "sessionIdFromAuth"))))
+
+      val cryptedTokenUrl: Crypted = mock[Crypted]
+      when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
+      when(cryptedTokenUrl.toBase64).thenReturn(encodedCorrectToken.getBytes())
+
+      val result: Future[Result] = apiTokenController.create(continueUrl)(FakeRequest().withHeaders(HmrcHeaderNames.authorisation -> bearerToken))
+
+      status(result) shouldBe 200
+
+      val requestHeaderCaptor: ArgumentCaptor[RequestHeader] = ArgumentCaptor.forClass(classOf[RequestHeader])
+      verify(mockAuditingService).sendTokenCreatedEvent(any)(requestHeaderCaptor.capture())
+
+      val sessionIdSentToAudit = requestHeaderCaptor.getValue.headers.get(HmrcHeaderNames.xSessionId)
+      sessionIdSentToAudit shouldBe Some("sessionIdFromAuth")
+    }
+
+    "auth contains a session with a sessionId via the mdtpInformation retrieval so use that; noting caller such as Pega has provided a sessionId which is ignored" in new Setup {
+      when(mockContinueUrlValidator.getRelativeOrAbsolutePermitted(any)(any))
+        .thenReturn(Future.successful(Some(continueUrl.get(UnsafePermitAll))))
+      when(mockAuditingService.sendTokenCreatedEvent(any)(any)).thenReturn(Future.unit)
+      when(mockAppConfig.ssoFeHost).thenReturn("ssoFeHost")
+
+      val tokenUrl = new URL("http://sso.service/tokenId/1234")
+      when(mockSsoConnector.createToken(any)(any)).thenReturn(Future.successful(tokenUrl))
+      when(mockAuthConnector.authorise(any, eqTo(Retrievals.mdtpInformation))(any, any))
+        .thenReturn(Future.successful(Some(MdtpInformation("myDeviceId", "sessionIdFromAuth"))))
+
+      val cryptedTokenUrl: Crypted = mock[Crypted]
+      when(mockAppConfig.encrypt(eqTo(PlainText(tokenUrl.toString)))).thenReturn(cryptedTokenUrl)
+      when(cryptedTokenUrl.toBase64).thenReturn(encodedCorrectToken.getBytes())
+
+      val result: Future[Result] = apiTokenController.create(continueUrl)(
+        FakeRequest().withHeaders(HmrcHeaderNames.authorisation -> bearerToken, HmrcHeaderNames.xSessionId -> "sessionIdInRequest")
+      )
+
+      status(result) shouldBe 200
+
+      val requestHeaderCaptor: ArgumentCaptor[RequestHeader] = ArgumentCaptor.forClass(classOf[RequestHeader])
+      verify(mockAuditingService).sendTokenCreatedEvent(any)(requestHeaderCaptor.capture())
+
+      val sessionIdSentToAudit = requestHeaderCaptor.getValue.headers.get(HmrcHeaderNames.xSessionId)
+      sessionIdSentToAudit shouldBe Some("sessionIdFromAuth")
     }
   }
 

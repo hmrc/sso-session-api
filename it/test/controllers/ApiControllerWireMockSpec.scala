@@ -17,18 +17,22 @@
 package controllers
 
 import base.BaseISpec
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import play.api.libs.json.Json
-import play.api.libs.ws.WSResponse
+import play.api.libs.ws.{DefaultWSCookie, WSResponse}
 import uk.gov.hmrc.http.HeaderNames
 
 class ApiControllerWireMockSpec extends BaseISpec {
 
+  override def extraConfig: Map[String, Any] = super.extraConfig + ("auditing.enabled" -> true)
+
   "api" should {
-    "create an api sso token with random session-id" in new Setup {
+    "create an api sso token" in new Setup {
       expectAuthorityRecordToBeFound()
       expectTokenToBeSuccessfullyCreated("/somewhere")
       setupForCentralAuthorisation()
+      expectMdtpInformationRetrievalToReturnNothing()
       val response: WSResponse = await(
         resourceRequest("/web-session")
           .withQueryStringParameters("continueUrl" -> "/somewhere")
@@ -47,6 +51,152 @@ class ApiControllerWireMockSpec extends BaseISpec {
     }
   }
 
+  "[GG-9130] add a sessionId if one is not provided in the request and we can't retrieve one from auth" in new Setup {
+    expectAuthorityRecordToBeFound()
+    expectTokenToBeSuccessfullyCreated("/somewhere")
+    setupForCentralAuthorisation()
+    expectMdtpInformationRetrievalToReturnNothing()
+    val response: WSResponse = await(
+      resourceRequest("/web-session")
+        .withQueryStringParameters("continueUrl" -> "/somewhere")
+        .addHttpHeaders(HeaderNames.authorisation -> authToken)
+        .withFollowRedirects(false)
+        .get()
+    )
+    response.status shouldBe OK
+
+    val setSessionId = decryptCookie(response.cookie("mdtp").get.value).get("sessionId")
+
+    setSessionId shouldBe defined
+  }
+
+
+  "[GG-9130] reuse the sessionId passed in the header, if there is no session in the mdtp cookie and if none can be retrieved from auth" in new Setup {
+    val sessionIdPassedInHeader = "session-0cd77215-00a6-4f99-8f45-e6db9c79019c"
+    expectAuthorityRecordToBeFound()
+    expectTokenToBeSuccessfullyCreated("/somewhere")
+    setupForCentralAuthorisation()
+    expectMdtpInformationRetrievalToReturnNothing()
+    val response: WSResponse = await(
+      resourceRequest("/web-session")
+        .withQueryStringParameters("continueUrl" -> "/somewhere")
+        .addHttpHeaders(HeaderNames.xSessionId -> sessionIdPassedInHeader)
+        .addHttpHeaders(HeaderNames.authorisation -> authToken)
+        .withFollowRedirects(false)
+        .get()
+    )
+    response.status shouldBe OK
+
+    val setSessionId = decryptCookie(response.cookie("mdtp").get.value).get("sessionId")
+
+    setSessionId shouldBe Some(sessionIdPassedInHeader)
+
+    val expectedAuditJson =
+      s"""{
+         |  "auditType" : "api-sso-token-created",
+         |  "detail" : {
+         |    "session-id" : "$sessionIdPassedInHeader"
+         |  }
+         |}
+         |""".stripMargin
+    WireMock.verify(postRequestedFor(urlPathEqualTo("/write/audit")).withRequestBody(equalToJson(expectedAuditJson, /* ignoreArrayOrder */ false, /* ignoreExtraElements */ true)))
+  }
+
+  "[GG-9130] reuse the sessionId passed in the mdtp cookie, if none can be retrieved from auth" in new Setup {
+    val sessionIdPassedInCookie = "session-00118f71-c825-47f6-a417-e4e649fb1175"
+    expectAuthorityRecordToBeFound()
+    expectTokenToBeSuccessfullyCreated("/somewhere")
+    setupForCentralAuthorisation()
+    expectMdtpInformationRetrievalToReturnNothing()
+    val response: WSResponse = await(
+      resourceRequest("/web-session")
+        .withQueryStringParameters("continueUrl" -> "/somewhere")
+        .addHttpHeaders(HeaderNames.authorisation -> authToken)
+        .addCookies(DefaultWSCookie("mdtp", encryptCookie(Map("sessionId" -> sessionIdPassedInCookie))))
+        .withFollowRedirects(false)
+        .get()
+    )
+    response.status shouldBe OK
+
+    val setSessionId = decryptCookie(response.cookie("mdtp").get.value).get("sessionId")
+
+    setSessionId shouldBe Some(sessionIdPassedInCookie)
+
+    val expectedAuditJson =
+      s"""{
+         |  "auditType" : "api-sso-token-created",
+         |  "detail" : {
+         |    "session-id" : "$sessionIdPassedInCookie"
+         |  }
+         |}
+         |""".stripMargin
+    WireMock.verify(postRequestedFor(urlPathEqualTo("/write/audit")).withRequestBody(equalToJson(expectedAuditJson, /* ignoreArrayOrder */ false, /* ignoreExtraElements */ true)))
+  }
+
+  "[GG-9130] use sessionId from auth, if one can be retrieved (even if no sessionId present in request)" in new Setup {
+    val sessionIdRetrievedFromAuth = "session-210821e5-20e8-4060-81c8-fee076038997"
+    expectAuthorityRecordToBeFound()
+    expectTokenToBeSuccessfullyCreated("/somewhere")
+    setupForCentralAuthorisation()
+    expectMdtpInformationRetrievalToSucceedWithSessionId(sessionIdRetrievedFromAuth)
+    val response: WSResponse = await(
+      resourceRequest("/web-session")
+        .withQueryStringParameters("continueUrl" -> "/somewhere")
+        .addHttpHeaders(HeaderNames.authorisation -> authToken)
+        .withFollowRedirects(false)
+        .get()
+    )
+    response.status shouldBe OK
+
+    val setSessionId = decryptCookie(response.cookie("mdtp").get.value).get("sessionId")
+
+    setSessionId shouldBe Some(sessionIdRetrievedFromAuth)
+
+    val expectedAuditJson =
+      s"""{
+         |  "auditType" : "api-sso-token-created",
+         |  "detail" : {
+         |    "session-id" : "$sessionIdRetrievedFromAuth"
+         |  }
+         |}
+         |""".stripMargin
+    WireMock.verify(postRequestedFor(urlPathEqualTo("/write/audit")).withRequestBody(equalToJson(expectedAuditJson, /* ignoreArrayOrder */ false, /* ignoreExtraElements */ true)))
+  }
+
+  "[GG-9130] use sessionId from auth in preference to sessionId(s) stored in request" in new Setup {
+    val sessionIdPassedInHeader = "session-0cd77215-00a6-4f99-8f45-e6db9c79019c"
+    val sessionIdPassedInCookie = "session-00118f71-c825-47f6-a417-e4e649fb1175"
+    val sessionIdRetrievedFromAuth = "session-210821e5-20e8-4060-81c8-fee076038997"
+    expectAuthorityRecordToBeFound()
+    expectTokenToBeSuccessfullyCreated("/somewhere")
+    setupForCentralAuthorisation()
+    expectMdtpInformationRetrievalToSucceedWithSessionId(sessionIdRetrievedFromAuth)
+    val response: WSResponse = await(
+      resourceRequest("/web-session")
+        .withQueryStringParameters("continueUrl" -> "/somewhere")
+        .addHttpHeaders(HeaderNames.authorisation -> authToken)
+        .addHttpHeaders(HeaderNames.xSessionId -> sessionIdPassedInHeader)
+        .addCookies(DefaultWSCookie("mdtp", encryptCookie(Map("sessionId" -> sessionIdPassedInCookie))))
+        .withFollowRedirects(false)
+        .get()
+    )
+    response.status shouldBe OK
+
+    val setSessionId = decryptCookie(response.cookie("mdtp").get.value).get("sessionId")
+
+    setSessionId shouldBe Some(sessionIdRetrievedFromAuth)
+
+    val expectedAuditJson =
+      s"""{
+         |  "auditType" : "api-sso-token-created",
+         |  "detail" : {
+         |    "session-id" : "$sessionIdRetrievedFromAuth"
+         |  }
+         |}
+         |""".stripMargin
+    WireMock.verify(postRequestedFor(urlPathEqualTo("/write/audit")).withRequestBody(equalToJson(expectedAuditJson, /* ignoreArrayOrder */ false, /* ignoreExtraElements */ true)))
+  }
+
   trait Setup {
     val username: String = s"perf-sa-${System.currentTimeMillis()}"
     val sessionId = "session-id-123"
@@ -62,6 +212,36 @@ class ApiControllerWireMockSpec extends BaseISpec {
               Json
                 .obj(
                   "uri" -> userId
+                )
+                .toString
+            )
+          )
+      )
+    }
+
+    def expectMdtpInformationRetrievalToReturnNothing(): Unit = {
+      stubFor(
+        post("/auth/authorise")
+          .withRequestBody(equalToJson("""{ "retrieve" : ["mdtpInformation"] }""", /* ignoreArrayOrder */ false, /* ignoreExtraElements */ true))
+          .willReturn(
+            okJson(
+              Json
+                .obj()
+                .toString
+            )
+          )
+      )
+    }
+
+    def expectMdtpInformationRetrievalToSucceedWithSessionId(sessionId: String): Unit = {
+      stubFor(
+        post("/auth/authorise")
+          .withRequestBody(equalToJson("""{ "retrieve" : ["mdtpInformation"] }""", /* ignoreArrayOrder */ false, /* ignoreExtraElements */ true))
+          .willReturn(
+            okJson(
+              Json
+                .obj(
+                  "mdtpInformation" -> Json.obj("deviceId" -> "myDeviceId", "sessionId" -> sessionId)
                 )
                 .toString
             )

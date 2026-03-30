@@ -39,4 +39,10 @@ trait BaseISpec extends WireMockSpec with Injecting {
       case PlainText(v) => cookieBaker.decode(v)
     }
   }
+
+  def encryptCookie(data: Map[String, String]): String = {
+    val applicationCrypto = new ApplicationCrypto(config.underlying)
+
+    applicationCrypto.SessionCookieCrypto.encrypt(PlainText(cookieBaker.encode(data))).value
+  }
 }
