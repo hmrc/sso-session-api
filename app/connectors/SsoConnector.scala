@@ -16,21 +16,20 @@
 
 package connectors
 
-import java.net.URL
 import com.google.inject.Inject
 import config.AppConfig
-
-import javax.inject.Singleton
 import models.ApiToken
 import play.api.http.HeaderNames
 import play.api.libs.functional.syntax.*
-import play.api.libs.json.Reads.*
 import play.api.libs.json.*
+import play.api.libs.json.Reads.*
 import play.api.libs.ws.writeableOf_JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits.*
-import uk.gov.hmrc.http.*
 import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HeaderNames as HMRCHeaderNames, HttpResponse, StringContextOps, UpstreamErrorResponse}
 
+import java.net.URL
+import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -46,10 +45,17 @@ class SsoConnector @Inject() (
     val createTokensUrl = url"$serviceUrl/sso/api-tokens"
 
     for {
-      response <- http.post(createTokensUrl).withBody(Json.toJson(tokenRequest)).execute[Either[UpstreamErrorResponse, HttpResponse]].map {
-                    case Right(response) => response
-                    case Left(err)       => throw err
-                  }
+      response <- http
+                    .post(createTokensUrl)
+                    .transform(
+                      _.addHttpHeaders((HMRCHeaderNames.deviceID, hc.deviceID.toString))
+                    ) // [GG-9256] explicitly send deviceID has implicit hc is lost due to .execute
+                    .withBody(Json.toJson(tokenRequest))
+                    .execute[Either[UpstreamErrorResponse, HttpResponse]]
+                    .map {
+                      case Right(response) => response
+                      case Left(err)       => throw err
+                    }
       uri = response
               .header(HeaderNames.LOCATION)
               .getOrElse(
