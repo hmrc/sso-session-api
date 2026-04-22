@@ -16,13 +16,16 @@
 
 package connectors
 
-import com.github.tomakehurst.wiremock.client.WireMock.{get, okJson, post, stubFor}
+import com.github.tomakehurst.wiremock.client.WireMock.{equalTo, get, okJson, post, stubFor}
 import models.ApiToken
 import play.api.libs.json.Json
 import play.api.test.Injecting
 import play.mvc.Http.HeaderNames
 import support.WireMockSpec
 import uk.gov.hmrc.http.HeaderCarrier
+import com.github.tomakehurst.wiremock.client
+import uk.gov.hmrc.http
+import play.api.libs.json.*
 
 import java.net.URL
 import scala.concurrent.Future
@@ -42,7 +45,7 @@ class SsoConnectorISpec extends WireMockSpec with ApiJsonFormats with Injecting 
 
     "on calling createToken, POST request to sso createTokensURL, return url constructed from the response LOCATION header" in new Setup {
       stubFor(
-        post("/sso/api-tokens")
+        post("/sso/api-tokens").withHeader("deviceID", equalTo(HeaderCarrier().deviceID.toString))
           .willReturn(
             okJson(Json.obj("api-tokens" -> s"${serviceBaseURL}/mock-create-token-url").toString).withHeader(HeaderNames.LOCATION, s"${serviceBaseURL}/mock-create-token-response-url")
           )
@@ -55,7 +58,7 @@ class SsoConnectorISpec extends WireMockSpec with ApiJsonFormats with Injecting 
 
     "on calling createToken, POST request to sso createTokensURL, throw exception when no url in response LOCATION header" in new Setup {
       stubFor(
-        post("/sso/api-tokens")
+        post("/sso/api-tokens").withHeader("deviceID", equalTo(HeaderCarrier().deviceID.toString))
           .willReturn(
             okJson(Json.obj("api-tokens" -> s"${serviceBaseURL}/mock-create-token-url").toString)
           )
