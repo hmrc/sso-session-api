@@ -98,7 +98,7 @@ class ApiTokenController @Inject() (
           bearer    <- hc.authorization
           sessionId <- hc.sessionId
         } yield ApiToken(bearer.value, sessionId.value, permittedUrl.url, Some("deprecated"))
-
+        
         maybeApiToken.fold {
           throw new BadRequestException("No Authorisation header in the request")
         } { apiToken =>

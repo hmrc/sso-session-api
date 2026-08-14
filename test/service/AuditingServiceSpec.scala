@@ -50,7 +50,7 @@ class AuditingServiceSpec extends UnitSpec with BeforeAndAfterEach {
         HeaderNames.xSessionId       -> sessionId,
         HeaderNames.akamaiReputation -> clientReputation,
         HeaderNames.xRequestId       -> requestId,
-        HeaderNames.deviceID         -> deviceId,
+        HeaderNames.deviceID         -> "-",
         "clientPort"                 -> clientPort,
         "transactionName"            -> "api-sso-token-created"
       )
