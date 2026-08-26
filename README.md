@@ -3,6 +3,12 @@
 This microservice is part of the SSO journey between the API platform and the web.
 An API authorised user requests SSO via sso-session-api (Web Session API), they are returned a link to sso-frontend which when requested redirects to the desired mdtp page with a valid web session cookie.
 
+## Run tests
+```shell
+sbt clean coverage test it/test coverageReport 
+```
+<br/>
+
 
 | Path                                                | Methods | Description                                                                       |
 |:----------------------------------------------------|:--------|:----------------------------------------------------------------------------------|
@@ -34,7 +40,4 @@ _NOTE: requires Bearer token and session id_
 }
 ```
 
-## Run tests
-```shell
-sbt clean coverage test it/test coverageReport 
-```
+
