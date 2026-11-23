@@ -47,14 +47,14 @@ class AuditingService @Inject() (
     transactionName: String,
     details: Map[String, String]
   )(implicit request: RequestHeader): Future[Unit] = {
+    val carrier = hc.copy(deviceID = None)
     val event = DataEvent(
       "sso-session-api",
       auditType,
       detail = details,
-      tags   = hc.toAuditTags(transactionName, request.path)
+      tags   = carrier.toAuditTags(transactionName, request.path)
     )
 
     auditConnector.sendEvent(event).map(_ => ())
   }
-
 }
